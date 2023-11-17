@@ -5,20 +5,30 @@ import neurokit2 as nk
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
-    df['Elapsed Time'] = (df.index / df.iloc[1, 0]) + initial_timestamp
-    df['Elapsed Time'] = pd.to_datetime(df['Elapsed Time'], unit='s').dt.strftime('%H:%M:%S:%f')
+    # Convert initial timestamp to datetime
+    initial_time = pd.to_datetime(initial_timestamp, unit='s')
+    
+    # Calculate time elapsed since initial timestamp for each row
+    df['Elapsed Time'] = df.index / df.iloc[1, 0] + initial_timestamp
+    df['Elapsed Time'] = (initial_time + pd.to_timedelta(df['Elapsed Time'], unit='s')).dt.strftime('%H:%M:%S:%f')
     return df
 
 def find_closest_time(event_time, ibi_data):
-    # Conversion of event_time to the same format as in ibi_data may be needed
-    closest_time = min(ibi_data['Time'], key=lambda x: abs(x - event_time))
+    # Convert event_time to a datetime object for comparison
+    event_datetime = datetime.datetime.strptime(event_time, '%H:%M:%S:%f')
+    
+    # Convert IBI times to datetime for comparison
+    ibi_data['Time'] = pd.to_datetime(ibi_data['Time'], format='%H:%M:%S:%f')
+    
+    # Find the row with the closest time to the event time
+    closest_time = ibi_data.iloc[(ibi_data['Time'] - event_datetime).abs().argsort()[:1]]
     return closest_time
 
 def process_bvp_signal(bvp_data, sampling_rate):
-    # Apply NeuroKit2 functions for signal processing
-    # This is a placeholder, replace with actual function calls
+    # Clean the PPG signal
     processed_signal = nk.ppg_clean(bvp_data, sampling_rate=sampling_rate)
     return processed_signal
+
 
 # Streamlit App
 st.title('HRV Metrics from PPG Data')
@@ -45,6 +55,9 @@ if bvp_file and tags_file and ibi_file and acc_file:
     event_name = st.selectbox('Select Event', ['Baseline', '5-Digit test', 'Exposure', 'Event1', 'Event2'])
     event_time = st.text_input('Enter Event Time (HH:MM:SS:MS)')
 
+    if event_time:
+        closest_time = find_closest_time(event_time, ibi_data)
+        
     # Find corresponding time in IBI data
     closest_time = find_closest_time(event_time, ibi_data)
 
