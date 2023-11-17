@@ -1,0 +1,8 @@
+streamlit
+pandas
+neurokit2
+numpy
+matplotlib
+scipy
+xlwt
+openpyxl
