@@ -5,24 +5,21 @@ import neurokit2 as nk
 
 def read_and_convert_data(uploaded_file, file_type):
     # Read the initial timestamp and sample rate from the file's first two lines
-    # Adjusting to handle additional text in the line
     initial_timestamp_line = uploaded_file.readline().decode().strip()
     initial_timestamp_parts = initial_timestamp_line.split(',')
-    initial_timestamp = int(float(initial_timestamp_parts[0].strip()))
+    initial_timestamp = float(initial_timestamp_parts[0].strip())
 
-    sample_rate_line = uploaded_file.readline().decode().strip()
-    sample_rate_parts = sample_rate_line.split(',')
-    sample_rate = float(sample_rate_parts[0].strip())
-
-    reference_start_time = pd.to_datetime('00:00:00', format='%H:%M:%S')
-
-    
-    # For BVP data, generate timestamps based on sample rate
     if file_type == 'BVP':
-        # Read the remaining data into a DataFrame
+        # BVP specific processing
+        sample_rate_line = uploaded_file.readline().decode().strip()
+        sample_rate = float(sample_rate_line.split(',')[0].strip())
         df = pd.read_csv(uploaded_file, header=None)
-        # Generate timestamps
         df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df.index / sample_rate, unit='s')
+    elif file_type == 'IBI':
+        # IBI specific processing
+        df = pd.read_csv(uploaded_file, skiprows=1, header=None)
+        df.rename(columns={0: 'IBI Time'}, inplace=True)
+        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df['IBI Time'], unit='s')
     else:
         # For other files, directly read into DataFrame assuming timestamps are in the first column
         df = pd.read_csv(uploaded_file, header=None)
@@ -30,6 +27,7 @@ def read_and_convert_data(uploaded_file, file_type):
 
 
     # Calculate elapsed time from the reference start time
+    reference_start_time = pd.to_datetime(initial_timestamp, unit='s')
     df['Elapsed Time'] = (df['Timestamp'] - reference_start_time).dt.total_seconds()
     df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
 
