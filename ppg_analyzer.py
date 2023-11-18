@@ -94,20 +94,20 @@ def match_event_tags(tags_df, data_df):
     matched_events = pd.merge_asof(tags_df, data_df, on='Timestamp')
     return matched_events
 
-def find_closest_time(event_time_delta, ibi_data):
+def find_closest_time(event_time_delta, ibi_data, reference_start_time):
     # Convert the string timestamps to total seconds
     ibi_data['Elapsed Seconds'] = pd.to_numeric(ibi_data.iloc[:, 0], errors='coerce')
 
     # Convert event_time_delta to total seconds
     event_time_seconds = event_time_delta.total_seconds()
 
-    # Drop NA values before sorting
-    ibi_data = ibi_data.dropna(subset=['Elapsed Seconds'])
-
-    # Find the index of the closest time in ibi_data
+    # Find the closest time in ibi_data
     closest_index = (ibi_data['Elapsed Seconds'] - event_time_seconds).abs().idxmin()
-    return ibi_data.iloc[closest_index, 0]  # Return the timestamp directly
+    closest_seconds = ibi_data.iloc[closest_index, 0]
 
+    # Convert to actual timestamp
+    closest_timestamp = reference_start_time + datetime.timedelta(seconds=closest_seconds)
+    return closest_timestamp
 
 
 def process_and_analyze_bvp(bvp_segment, sampling_rate):
@@ -164,9 +164,9 @@ if bvp_file and tags_file and ibi_file:
     end_tag_timedelta = pd.to_timedelta(end_tag)
     
     # Use the find_closest_time function and get the timestamps directly
-    closest_start_time = pd.to_datetime(find_closest_time(start_tag_timedelta, ibi_data))
-    closest_end_time = pd.to_datetime(find_closest_time(end_tag_timedelta, ibi_data))
-    
+    closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data, reference_start_time)
+    closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data, reference_start_time)
+
         # Extract the segment of BVP data between the selected start and end times
         # Display the start and end times for debugging
     st.write("Selected Start Time:", closest_start_time)
