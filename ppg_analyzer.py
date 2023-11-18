@@ -143,11 +143,14 @@ if bvp_file and tags_file and ibi_file:
     
     # Extract the segment of BVP data between the selected start and end times
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
-    hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
-    st.write(hrv_metrics)
     
-    # Visualization (if needed)
-    st.line_chart(processed_segment)
+    # Check if the segment is too short
+    if len(segment) <= 21:  # 21 is the padlen value that caused the error
+        st.error("Selected time range is too short for analysis. Please select a longer duration.")
+    else:
+        # Process the segment if it's long enough
+        hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
+        st.write(hrv_metrics)
+        st.line_chart(processed_segment)
+        st.download_button(label="Download HRV Metrics as CSV", data=hrv_metrics.to_csv(), file_name='hrv_metrics.csv', mime='text/csv')
     
-    # Download results
-    st.download_button(label="Download HRV Metrics as CSV", data=hrv_metrics.to_csv(), file_name='hrv_metrics.csv', mime='text/csv')
