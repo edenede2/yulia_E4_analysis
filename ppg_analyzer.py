@@ -79,6 +79,9 @@ def find_closest_time(event_time_delta, ibi_data):
     # Ensure 'Elapsed Time' is in a numeric format
     ibi_data['Elapsed Time'] = pd.to_numeric(ibi_data['Elapsed Time'], errors='coerce')
 
+    # Drop NA values before sorting
+    ibi_data = ibi_data.dropna(subset=['Elapsed Time'])
+
     # Find the closest time in ibi_data
     closest_time = ibi_data.iloc[(ibi_data['Elapsed Time'] - event_time_seconds).abs().argsort()[:1]]
     return closest_time
