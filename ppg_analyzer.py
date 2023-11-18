@@ -107,21 +107,25 @@ if bvp_file and tags_file and ibi_file:
     tags_data = read_and_convert_data(tags_file, 'tags')
     ibi_data = read_and_convert_data(ibi_file, 'IBI')
 
-    # User selects an event from the dropdown
-    event_choices = tags_data['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-    selected_event = st.selectbox('Select Event', event_choices)
+    # Convert the timestamp to relative time (since start of the recording)
+    tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(lambda x: datetime.timedelta(seconds=float(x)))
 
-    # Find the corresponding time in data
-    selected_event_time = pd.to_datetime(selected_event)
-    closest_time = find_closest_time(selected_event_time, ibi_data)
+    # User selects an event's start and end times from the dropdown
+    event_choices = tags_data['Relative Time'].tolist()
+    selected_start_time = st.selectbox('Select Start Time of Event', event_choices, key='start_time')
+    selected_end_time = st.selectbox('Select End Time of Event', event_choices, key='end_time')
 
+    # Find the corresponding time in data for start and end times
+    closest_start_time = find_closest_time(selected_start_time, ibi_data)
+    closest_end_time = find_closest_time(selected_end_time, ibi_data)
 
-    # Process BVP Signal and Compute HRV Metrics
-    hrv_metrics, processed_bvp = process_bvp_signal_and_compute_hrv(bvp_data, 64)
+    # Process the segment between the selected start and end times
+    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+    hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
     st.write(hrv_metrics)
 
     # Visualization (if needed)
-    st.line_chart(processed_bvp)
+    st.line_chart(processed_segment)
 
     # Download results
     st.download_button(label="Download HRV Metrics as CSV", data=hrv_metrics.to_csv(), file_name='hrv_metrics.csv', mime='text/csv')
