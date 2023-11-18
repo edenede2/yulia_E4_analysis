@@ -147,6 +147,11 @@ if bvp_file and tags_file and ibi_file:
     tags_data = read_and_convert_data(tags_file, 'tags')
     ibi_data = read_and_convert_data(ibi_file, 'IBI')
 
+    # Define reference_start_time right after reading the data
+    # Assuming initial_timestamp is defined in read_and_convert_data function
+    reference_start_time = pd.to_datetime(initial_timestamp, unit='s')
+
+    
     # Convert the timestamp to relative time (since start of the recording)
     # Apply this function to the 'Elapsed Time' column
     tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(parse_time_duration)
@@ -165,7 +170,7 @@ if bvp_file and tags_file and ibi_file:
     start_tag_timedelta = pd.to_timedelta(start_tag)
     end_tag_timedelta = pd.to_timedelta(end_tag)
     
-    # Use the find_closest_time function and get the timestamps directly
+    # Now use reference_start_time in your function calls
     closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data, reference_start_time)
     closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data, reference_start_time)
 
