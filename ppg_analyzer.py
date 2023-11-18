@@ -33,7 +33,14 @@ def read_and_convert_data(uploaded_file, file_type):
     df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
 
     return df
-    
+
+def parse_time_duration(time_str):
+    # Split the time string into hours, minutes, and seconds
+    h, m, s = time_str.split(':')
+    return datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
+
+
+
 def read_bvp_data(uploaded_file):
     # Read and ignore the first two lines (metadata)
     uploaded_file.readline()  # Ignore first line
@@ -108,8 +115,8 @@ if bvp_file and tags_file and ibi_file:
     ibi_data = read_and_convert_data(ibi_file, 'IBI')
 
     # Convert the timestamp to relative time (since start of the recording)
-    tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(lambda x: datetime.timedelta(seconds=float(x)))
-
+    # Apply this function to the 'Elapsed Time' column
+    tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(parse_time_duration)
     # User selects an event's start and end times from the dropdown
     event_choices = tags_data['Relative Time'].tolist()
     selected_start_time = st.selectbox('Select Start Time of Event', event_choices, key='start_time')
