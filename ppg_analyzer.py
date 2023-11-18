@@ -114,8 +114,6 @@ if bvp_file and tags_file and ibi_file:
     selected_event_time = pd.to_datetime(selected_event)
     closest_time = find_closest_time(selected_event_time, ibi_data)
 
-    # Process BVP Signal
-    processed_bvp = process_bvp_signal(bvp_data, 64)  # Assuming 64Hz sampling rate
 
     # Process BVP Signal and Compute HRV Metrics
     hrv_metrics = process_bvp_signal_and_compute_hrv(bvp_data, 64)
