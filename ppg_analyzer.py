@@ -72,16 +72,15 @@ def match_event_tags(tags_df, data_df):
     matched_events = pd.merge_asof(tags_df, data_df, on='Timestamp')
     return matched_events
 
-def find_closest_time(event_time, ibi_data):
-    # Convert event_time to a string in the correct format if it's not already a string
-    if not isinstance(event_time, str):
-        event_time = event_time.strftime('%H:%M:%S:%f')
+def find_closest_time(event_time_delta, ibi_data):
+    # Convert Timedelta to total seconds
+    event_time_seconds = event_time_delta.total_seconds()
 
-    event_datetime = datetime.datetime.strptime(event_time, '%H:%M:%S:%f')
-
-    # Adjusted to use 'Timestamp' for comparison
-    closest_time = ibi_data.iloc[(ibi_data['Timestamp'] - event_datetime).abs().argsort()[:1]]
+    # Find the closest time in ibi_data
+    # Assuming ibi_data['Timestamp'] is in datetime format and 'Elapsed Time' is in seconds
+    closest_time = ibi_data.iloc[(ibi_data['Elapsed Time'] - event_time_seconds).abs().argsort()[:1]]
     return closest_time
+
 
 def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
     # Assuming bvp_data is a one-column DataFrame with the BVP signal
