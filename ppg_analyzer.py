@@ -32,7 +32,7 @@ def read_and_convert_data(uploaded_file, file_type):
     df['Elapsed Time'] = (df['Timestamp'] - reference_start_time).dt.total_seconds()
     df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
 
-    return df
+    return df, initial_timestamp
 
 def parse_time_duration(time_str):
     # Split the time string into hours, minutes, and seconds
@@ -143,13 +143,13 @@ ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
 
 
 if bvp_file and tags_file and ibi_file:
-    bvp_data = read_bvp_data(bvp_file)
-    tags_data = read_and_convert_data(tags_file, 'tags')
-    ibi_data = read_and_convert_data(ibi_file, 'IBI')
+    # Read the data and capture initial_timestamp
+    bvp_data, bvp_initial_timestamp = read_bvp_data(bvp_file)
+    tags_data, tags_initial_timestamp = read_and_convert_data(tags_file, 'tags')
+    ibi_data, ibi_initial_timestamp = read_and_convert_data(ibi_file, 'IBI')
 
-    # Define reference_start_time right after reading the data
-    # Assuming initial_timestamp is defined in read_and_convert_data function
-    reference_start_time = pd.to_datetime(initial_timestamp, unit='s')
+    # Use any of the initial timestamps (assuming they are the same)
+    reference_start_time = pd.to_datetime(bvp_initial_timestamp, unit='s')
 
     
     # Convert the timestamp to relative time (since start of the recording)
