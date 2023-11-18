@@ -82,10 +82,9 @@ def find_closest_time(event_time_delta, ibi_data):
     # Drop NA values before sorting
     ibi_data = ibi_data.dropna(subset=['Elapsed Seconds'])
 
-    # Find the closest time in ibi_data
+    # Find the index of the closest time in ibi_data
     closest_index = (ibi_data['Elapsed Seconds'] - event_time_seconds).abs().idxmin()
-    closest_time = ibi_data.iloc[closest_index]
-    return closest_time
+    return ibi_data.iloc[closest_index]
 
 
 
@@ -130,7 +129,9 @@ if bvp_file and tags_file and ibi_file:
 
     # User selects start and end tags for the chosen event
     event_tags = tags_data['Relative Time'].tolist()
-    start_tag = st.selectbox('Select Start Tag', event_tags, key='start_tag')
+    start_tag_timedelta = pd.to_timedelta(start_tag)
+    closest_start_row = find_closest_time(start_tag_timedelta, ibi_data)
+    closest_start_time = closest_start_row['Timestamp']
     end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
 
     # Convert start and end tags to Timestamps for comparison
