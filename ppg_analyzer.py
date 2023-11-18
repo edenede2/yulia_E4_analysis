@@ -5,8 +5,6 @@ import datetime
 import neurokit2 as nk
 
 def read_and_convert_data(uploaded_file, file_type):
-    # Read the initial timestamp and sample rate from the file's first two lines
-    def read_and_convert_data(uploaded_file, file_type):
     # Read the initial timestamp line
     initial_timestamp_line = uploaded_file.readline().decode().strip()
     print("Initial Timestamp Line:", initial_timestamp_line)
