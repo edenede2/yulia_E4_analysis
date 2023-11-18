@@ -14,6 +14,9 @@ def read_and_convert_data(uploaded_file, file_type):
     sample_rate_parts = sample_rate_line.split(',')
     sample_rate = float(sample_rate_parts[0].strip())
 
+    reference_start_time = pd.to_datetime('00:00:00', format='%H:%M:%S')
+
+    
     # For BVP data, generate timestamps based on sample rate
     if file_type == 'BVP':
         # Read the remaining data into a DataFrame
@@ -25,7 +28,9 @@ def read_and_convert_data(uploaded_file, file_type):
         df = pd.read_csv(uploaded_file, header=None)
         df['Timestamp'] = pd.to_datetime(df[0], unit='s')
 
-    df['Elapsed Time'] = (df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.total_seconds()
+
+    # Calculate elapsed time from the reference start time
+    df['Elapsed Time'] = (df['Timestamp'] - reference_start_time).dt.total_seconds()
     df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
 
     return df
@@ -51,13 +56,13 @@ def match_event_tags(tags_df, data_df):
     return matched_events
 
 def find_closest_time(event_time, ibi_data):
-    # Convert event_time to a datetime object for comparison
+    # Convert event_time to a string in the correct format if it's not already a string
+    if not isinstance(event_time, str):
+        event_time = event_time.strftime('%H:%M:%S:%f')
+
     event_datetime = datetime.datetime.strptime(event_time, '%H:%M:%S:%f')
-    
-    # Convert IBI times to datetime for comparison
-    ibi_data['Time'] = pd.to_datetime(ibi_data['Time'], format='%H:%M:%S:%f')
-    
-    # Find the row with the closest time to the event time
+
+    # Assuming ibi_data['Time'] is already in datetime format
     closest_time = ibi_data.iloc[(ibi_data['Time'] - event_datetime).abs().argsort()[:1]]
     return closest_time
 
