@@ -132,7 +132,8 @@ if bvp_file and tags_file and ibi_file:
     # Assuming this is part of your Streamlit app
     start_tag = st.selectbox('Select Start Tag', event_tags, key='start_tag')
     # Now start_tag is defined and can be used
-    start_tag_timedelta = pd.to_timedelta(start_tag)    closest_start_row = find_closest_time(start_tag_timedelta, ibi_data)
+    start_tag_timedelta = pd.to_timedelta(start_tag)
+    closest_start_row = find_closest_time(start_tag_timedelta, ibi_data)
     closest_start_time = closest_start_row['Timestamp']
     end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
 
