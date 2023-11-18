@@ -6,13 +6,20 @@ import neurokit2 as nk
 
 def read_and_convert_data(uploaded_file, file_type):
     # Read the initial timestamp and sample rate from the file's first two lines
+    def read_and_convert_data(uploaded_file, file_type):
+    # Read the initial timestamp line
     initial_timestamp_line = uploaded_file.readline().decode().strip()
-    print("Initial Timestamp Line:", initial_timestamp_line)  # Debug print
+    print("Initial Timestamp Line:", initial_timestamp_line)
 
+    # Extract initial timestamp value
     initial_timestamp_parts = initial_timestamp_line.split(',')
-    initial_timestamp = float(initial_timestamp_parts[0].strip())
-    print("Initial Timestamp:", initial_timestamp)  # Debug print
-    
+    try:
+        initial_timestamp = float(initial_timestamp_parts[0].strip())
+    except ValueError:
+        print("Error: Initial timestamp is not a numeric value.")
+        return None, None
+
+    print("Initial Timestamp:", initial_timestamp)    
     if file_type == 'BVP':
         # BVP specific processing
         sample_rate_line = uploaded_file.readline().decode().strip()
@@ -53,7 +60,7 @@ def read_bvp_data(uploaded_file):
     bvp_data = pd.read_csv(uploaded_file, header=None)
     bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
 
-    return bvp_data
+    return bvp_data, initial_timestamp
 
 def find_gaps(ibi_data, threshold=20.0):
     """
