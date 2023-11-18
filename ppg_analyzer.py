@@ -24,7 +24,9 @@ def read_and_convert_data(uploaded_file, file_type):
         df = pd.read_csv(uploaded_file, header=None)
         df['Timestamp'] = pd.to_datetime(df[0], unit='s')
 
-    df['Elapsed Time'] = (df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.strftime('%H:%M:%S:%f')
+    elapsed_time = df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')
+    df['Elapsed Time'] = elapsed_time.dt.total_seconds().apply(lambda x: str(datetime.timedelta(seconds=x)))
+
     return df
 
 
