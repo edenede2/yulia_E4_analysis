@@ -3,20 +3,20 @@ import pandas as pd
 import datetime
 import neurokit2 as nk
 
-def read_and_convert_data(file, file_type):
-    # Read the initial timestamp and sample rate
-    with open(file, 'r') as f:
-        initial_timestamp = int(f.readline().strip())
-        sample_rate = float(f.readline().strip())
+def read_and_convert_data(uploaded_file, file_type):
+    # Read the initial timestamp and sample rate from the file's first two lines
+    initial_timestamp = int(uploaded_file.readline().decode().strip())
+    sample_rate = float(uploaded_file.readline().decode().strip())
 
-    # Read the actual data, skipping the first two rows
-    df = pd.read_csv(file, skiprows=2, header=None)
-
+    # For BVP data, generate timestamps based on sample rate
     if file_type == 'BVP':
-        # For BVP, generate timestamps based on sample rate
+        # Read the remaining data into a DataFrame
+        df = pd.read_csv(uploaded_file, header=None)
+        # Generate timestamps
         df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df.index / sample_rate, unit='s')
     else:
-        # For other files, timestamps are directly in the data
+        # For other files, directly read into DataFrame assuming timestamps are in the first column
+        df = pd.read_csv(uploaded_file, header=None)
         df['Timestamp'] = pd.to_datetime(df[0], unit='s')
 
     df['Elapsed Time'] = (df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.strftime('%H:%M:%S:%f')
