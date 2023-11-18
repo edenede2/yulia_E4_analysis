@@ -168,11 +168,20 @@ if bvp_file and tags_file and ibi_file:
     closest_end_time = pd.to_datetime(find_closest_time(end_tag_timedelta, ibi_data))
     
         # Extract the segment of BVP data between the selected start and end times
-    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+        # Display the start and end times for debugging
+    st.write("Selected Start Time:", closest_start_time)
+    st.write("Selected End Time:", closest_end_time)
 
-    # Find and remove gaps from the BVP segment
+    # Extract and display the length of the BVP segment
+    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+    st.write("Length of BVP Segment before removing gaps:", len(segment))
+
+    # Find and display gaps
     ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
     gaps = find_gaps(ibi_segment['IBI'])
+    st.write("Identified Gaps:", gaps)
+
+    # Remove gaps from the BVP segment and process
     bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
 
     # Check if the segment is long enough for processing
