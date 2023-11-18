@@ -52,7 +52,7 @@ def read_bvp_data(uploaded_file):
 
     return bvp_data
 
-def find_gaps(ibi_data, threshold=2.0):
+def find_gaps(ibi_data, threshold=20.0):
     """
     Identify gaps in IBI data where the gap between successive IBIs is greater than the threshold.
     """
