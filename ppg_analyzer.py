@@ -33,7 +33,18 @@ def read_and_convert_data(uploaded_file, file_type):
     df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
 
     return df
+    
+def read_bvp_data(uploaded_file):
+    # Read and ignore the first two lines (metadata)
+    uploaded_file.readline()  # Ignore first line
+    uploaded_file.readline()  # Ignore second line
 
+    # Read the BVP data into a DataFrame
+    bvp_data = pd.read_csv(uploaded_file, header=None)
+    if bvp_data.shape[1] != 1:
+        raise ValueError("BVP data should be a single column. Found: {} columns".format(bvp_data.shape[1]))
+
+    return bvp_data
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
@@ -88,7 +99,7 @@ tags_file = st.file_uploader("Upload tags.csv", type="csv")
 ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
 
 if bvp_file and tags_file and ibi_file:
-    bvp_data = read_and_convert_data(bvp_file, 'BVP')
+    bvp_data = read_bvp_data(bvp_file)
     tags_data = read_and_convert_data(tags_file, 'tags')
     ibi_data = read_and_convert_data(ibi_file, 'IBI')
 
