@@ -114,8 +114,11 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     """
     Clean the BVP signal and compute HRV metrics.
     """
+    # Assuming bvp_segment is a one-column DataFrame, use the first column directly
+    bvp_signal = bvp_segment.iloc[:, 0]
+
     # Clean the BVP signal
-    cleaned_bvp = nk.ppg_clean(bvp_segment, sampling_rate=sampling_rate)
+    cleaned_bvp = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
 
     # Find R-peaks in the cleaned BVP signal
     peaks_info = nk.ppg_findpeaks(cleaned_bvp, sampling_rate=sampling_rate)
@@ -124,6 +127,7 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     # Compute HRV metrics
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=False)
     return hrv_metrics, cleaned_bvp, r_peaks
+
 
 
 
