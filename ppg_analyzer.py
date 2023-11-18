@@ -7,9 +7,12 @@ import neurokit2 as nk
 def read_and_convert_data(uploaded_file, file_type):
     # Read the initial timestamp and sample rate from the file's first two lines
     initial_timestamp_line = uploaded_file.readline().decode().strip()
+    print("Initial Timestamp Line:", initial_timestamp_line)  # Debug print
+
     initial_timestamp_parts = initial_timestamp_line.split(',')
     initial_timestamp = float(initial_timestamp_parts[0].strip())
-
+    print("Initial Timestamp:", initial_timestamp)  # Debug print
+    
     if file_type == 'BVP':
         # BVP specific processing
         sample_rate_line = uploaded_file.readline().decode().strip()
