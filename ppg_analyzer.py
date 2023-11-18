@@ -170,17 +170,17 @@ if bvp_file and tags_file and ibi_file:
         # Extract the segment of BVP data between the selected start and end times
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
 
-    # Find gaps in the IBI data for the same segment
+    # Find and remove gaps from the BVP segment
     ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
     gaps = find_gaps(ibi_segment['IBI'])
-
-    # Remove gaps from the BVP segment
     bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
 
-    # Process the BVP segment and compute HRV metrics
-    # Process the BVP segment and compute HRV metrics
-    # Directly use the first column of the bvp_segment_without_gaps DataFrame
-    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, 64)
+    # Check if the segment is long enough for processing
+    if len(bvp_segment_without_gaps) > 21:  # Ensure the segment is longer than the padlen
+        # Process the BVP segment and compute HRV metrics
+        hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, 64)
+        st.write(hrv_metrics)
+    else:
+        # Handle the case where the segment is too short
+        st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
 
-    # Display results
-    st.write(hrv_metrics)
