@@ -43,15 +43,15 @@ def parse_time_duration(time_str):
 
 def read_bvp_data(uploaded_file):
     # Read and ignore the first two lines (metadata)
-    uploaded_file.readline()  # Ignore first line
-    uploaded_file.readline()  # Ignore second line
+    initial_timestamp = float(uploaded_file.readline().decode().strip().split(',')[0])
+    sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
 
     # Read the BVP data into a DataFrame
     bvp_data = pd.read_csv(uploaded_file, header=None)
-    if bvp_data.shape[1] != 1:
-        raise ValueError("BVP data should be a single column. Found: {} columns".format(bvp_data.shape[1]))
+    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
 
     return bvp_data
+
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
@@ -121,14 +121,14 @@ if bvp_file and tags_file and ibi_file:
     # Convert the timestamp to relative time (since start of the recording)
     # Apply this function to the 'Elapsed Time' column
     tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(parse_time_duration)
-    # User selects an event's start and end times from the dropdown
-    event_choices = tags_data['Relative Time'].tolist()
-    selected_start_time = st.selectbox('Select Start Time of Event', event_choices, key='start_time')
-    selected_end_time = st.selectbox('Select End Time of Event', event_choices, key='end_time')
+    # User selects start and end tags for each event
+    event_tags = tags_data['Relative Time'].tolist()
+    start_tag = st.selectbox('Select Start Tag', event_tags, key='start_tag')
+    end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
 
-    # Find the corresponding time in data for start and end times
-    closest_start_time = find_closest_time(selected_start_time, ibi_data)
-    closest_end_time = find_closest_time(selected_end_time, ibi_data)
+    # Find the corresponding time in data for start and end tags
+    closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data)
+    closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data)
 
     # Process the segment between the selected start and end times
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
