@@ -84,7 +84,8 @@ def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
     processed_signal = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
 
     # Find R-peaks in the processed BVP signal
-    r_peaks = nk.ppg_findpeaks(processed_signal)
+    r_peaks_info = nk.ppg_findpeaks(processed_signal)
+    r_peaks = r_peaks_info['PPG_Peaks']  # This should be a list or Series of R-peak indices
 
     # Compute HRV metrics
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=True)
