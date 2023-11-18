@@ -84,7 +84,7 @@ def find_closest_time(event_time_delta, ibi_data):
 
     # Find the index of the closest time in ibi_data
     closest_index = (ibi_data['Elapsed Seconds'] - event_time_seconds).abs().idxmin()
-    return ibi_data.iloc[closest_index]
+    return ibi_data.iloc[closest_index, 0]  # Return the timestamp directly
 
 
 
@@ -138,8 +138,10 @@ if bvp_file and tags_file and ibi_file:
     end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
 
     # Convert start and end tags to Timestamps for comparison
-    closest_start_time = pd.to_datetime(find_closest_time(pd.to_timedelta(start_tag), ibi_data)['Timestamp'].values[0])
-    closest_end_time = pd.to_datetime(find_closest_time(pd.to_timedelta(end_tag), ibi_data)['Timestamp'].values[0])
+    # Corrected code to find the closest start and end times
+    closest_start_time = pd.to_datetime(find_closest_time(pd.to_timedelta(start_tag), ibi_data))
+    closest_end_time = pd.to_datetime(find_closest_time(pd.to_timedelta(end_tag), ibi_data))
+
 
     # Extract the segment of BVP data between the selected start and end times
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
