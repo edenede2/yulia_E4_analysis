@@ -3,6 +3,25 @@ import pandas as pd
 import datetime
 import neurokit2 as nk
 
+def read_and_convert_data(file, file_type):
+    # Read the initial timestamp and sample rate
+    with open(file, 'r') as f:
+        initial_timestamp = int(f.readline().strip())
+        sample_rate = float(f.readline().strip())
+
+    # Read the actual data, skipping the first two rows
+    df = pd.read_csv(file, skiprows=2, header=None)
+
+    if file_type == 'BVP':
+        # For BVP, generate timestamps based on sample rate
+        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df.index / sample_rate, unit='s')
+    else:
+        # For other files, timestamps are directly in the data
+        df['Timestamp'] = pd.to_datetime(df[0], unit='s')
+
+    df['Elapsed Time'] = (df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.strftime('%H:%M:%S:%f')
+    return df
+
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
     # Convert initial timestamp to datetime
@@ -12,6 +31,15 @@ def convert_to_elapsed_time(df, initial_timestamp):
     df['Elapsed Time'] = df.index / df.iloc[1, 0] + initial_timestamp
     df['Elapsed Time'] = (initial_time + pd.to_timedelta(df['Elapsed Time'], unit='s')).dt.strftime('%H:%M:%S:%f')
     return df
+
+def match_event_tags(tags_df, data_df):
+    # Assuming tags_df contains Unix timestamps of events
+    # Convert these to datetime
+    tags_df['Timestamp'] = pd.to_datetime(tags_df[0], unit='s')
+
+    # Find corresponding times in data_df
+    matched_events = pd.merge_asof(tags_df, data_df, on='Timestamp')
+    return matched_events
 
 def find_closest_time(event_time, ibi_data):
     # Convert event_time to a datetime object for comparison
@@ -30,6 +58,7 @@ def process_bvp_signal(bvp_data, sampling_rate):
     return processed_signal
 
 
+
 # Streamlit App
 st.title('HRV Metrics from PPG Data')
 
@@ -37,29 +66,19 @@ st.title('HRV Metrics from PPG Data')
 bvp_file = st.file_uploader("Upload BVP.csv", type="csv")
 tags_file = st.file_uploader("Upload tags.csv", type="csv")
 ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
-acc_file = st.file_uploader("Upload ACC.csv", type="csv")
 
 if bvp_file and tags_file and ibi_file and acc_file:
-    bvp_data = pd.read_csv(bvp_file, header=None)
-    tags_data = pd.read_csv(tags_file, header=None)
-    ibi_data = pd.read_csv(ibi_file, header=None)
-    acc_data = pd.read_csv(acc_file, header=None)
+    bvp_data = read_and_convert_data(bvp_file, 'BVP')
+    tags_data = read_and_convert_data(tags_file, 'tags')
+    ibi_data = read_and_convert_data(ibi_file, 'IBI')
 
-    # Convert time to time from start
-    initial_timestamp = datetime.datetime.now().timestamp()  # Replace with actual initial timestamp
-    bvp_data = convert_to_elapsed_time(bvp_data, initial_timestamp)
-    ibi_data = convert_to_elapsed_time(ibi_data, initial_timestamp)
-    # Do the same for other dataframes as needed
+    # User selects an event from the dropdown
+    event_choices = tags_data['Timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+    selected_event = st.selectbox('Select Event', event_choices)
 
-    # User interaction for event selection
-    event_name = st.selectbox('Select Event', ['Baseline', '5-Digit test', 'Exposure', 'Event1', 'Event2'])
-    event_time = st.text_input('Enter Event Time (HH:MM:SS:MS)')
-
-    if event_time:
-        closest_time = find_closest_time(event_time, ibi_data)
-        
-    # Find corresponding time in IBI data
-    closest_time = find_closest_time(event_time, ibi_data)
+    # Find the corresponding time in data
+    selected_event_time = pd.to_datetime(selected_event)
+    closest_time = find_closest_time(selected_event_time, ibi_data)
 
     # Process BVP Signal
     processed_bvp = process_bvp_signal(bvp_data, 64)  # Assuming 64Hz sampling rate
