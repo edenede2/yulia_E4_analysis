@@ -114,7 +114,7 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     """
     Clean the BVP signal and compute HRV metrics.
     """
-    # Assuming bvp_segment is a one-column DataFrame, use the first column directly
+    # Use the first column of the DataFrame
     bvp_signal = bvp_segment.iloc[:, 0]
 
     # Clean the BVP signal
@@ -180,7 +180,7 @@ if bvp_file and tags_file and ibi_file:
     # Process the BVP segment and compute HRV metrics
     # Process the BVP segment and compute HRV metrics
     # Directly use the first column of the bvp_segment_without_gaps DataFrame
-    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps.iloc[:, 0], 64)
+    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, 64)
 
     # Display results
     st.write(hrv_metrics)
