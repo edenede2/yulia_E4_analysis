@@ -89,7 +89,7 @@ def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
 
     # Compute HRV metrics
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=True)
-    return hrv_metrics
+    return hrv_metrics, processed_signal
 
 
 
@@ -117,7 +117,7 @@ if bvp_file and tags_file and ibi_file:
 
 
     # Process BVP Signal and Compute HRV Metrics
-    hrv_metrics = process_bvp_signal_and_compute_hrv(bvp_data, 64)
+    hrv_metrics, processed_bvp = process_bvp_signal_and_compute_hrv(bvp_data, 64)
     st.write(hrv_metrics)
 
     # Visualization (if needed)
