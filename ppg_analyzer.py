@@ -73,18 +73,20 @@ def match_event_tags(tags_df, data_df):
     return matched_events
 
 def find_closest_time(event_time_delta, ibi_data):
-    # Convert Timedelta to total seconds
+    # Convert the string timestamps to total seconds
+    ibi_data['Elapsed Seconds'] = pd.to_numeric(ibi_data.iloc[:, 0], errors='coerce')
+
+    # Convert event_time_delta to total seconds
     event_time_seconds = event_time_delta.total_seconds()
 
-    # Ensure 'Elapsed Time' is in a numeric format
-    ibi_data['Elapsed Time'] = pd.to_numeric(ibi_data['Elapsed Time'], errors='coerce')
-
     # Drop NA values before sorting
-    ibi_data = ibi_data.dropna(subset=['Elapsed Time'])
+    ibi_data = ibi_data.dropna(subset=['Elapsed Seconds'])
 
     # Find the closest time in ibi_data
-    closest_time = ibi_data.iloc[(ibi_data['Elapsed Time'] - event_time_seconds).abs().argsort()[:1]]
+    closest_index = (ibi_data['Elapsed Seconds'] - event_time_seconds).abs().idxmin()
+    closest_time = ibi_data.iloc[closest_index]
     return closest_time
+
 
 
 def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
