@@ -19,8 +19,8 @@ def read_and_convert_data(uploaded_file, file_type):
     elif file_type == 'IBI':
         # IBI specific processing
         df = pd.read_csv(uploaded_file, skiprows=1, header=None)
-        df.rename(columns={0: 'IBI Time'}, inplace=True)
-        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df['IBI Time'], unit='s')
+        df.rename(columns={1: 'IBI'}, inplace=True)
+        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df['IBI'], unit='s')
     else:
         # For other files, directly read into DataFrame assuming timestamps are in the first column
         df = pd.read_csv(uploaded_file, header=None)
@@ -61,8 +61,8 @@ def find_closest_time(event_time, ibi_data):
 
     event_datetime = datetime.datetime.strptime(event_time, '%H:%M:%S:%f')
 
-    # Use the correct column name ('IBI Time' instead of 'Time')
-    closest_time = ibi_data.iloc[(ibi_data['IBI Time'] - event_datetime).abs().argsort()[:1]]
+    # Adjusted to use 'Timestamp' for comparison
+    closest_time = ibi_data.iloc[(ibi_data['Timestamp'] - event_datetime).abs().argsort()[:1]]
     return closest_time
 
 def process_bvp_signal(bvp_data, sampling_rate):
