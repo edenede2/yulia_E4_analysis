@@ -60,8 +60,8 @@ def find_closest_time(event_time, ibi_data):
 
     event_datetime = datetime.datetime.strptime(event_time, '%H:%M:%S:%f')
 
-    # Assuming ibi_data['Time'] is already in datetime format
-    closest_time = ibi_data.iloc[(ibi_data['Time'] - event_datetime).abs().argsort()[:1]]
+    # Use the correct column name ('IBI Time' instead of 'Time')
+    closest_time = ibi_data.iloc[(ibi_data['IBI Time'] - event_datetime).abs().argsort()[:1]]
     return closest_time
 
 def process_bvp_signal(bvp_data, sampling_rate):
