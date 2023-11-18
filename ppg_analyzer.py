@@ -5,8 +5,13 @@ import neurokit2 as nk
 
 def read_and_convert_data(uploaded_file, file_type):
     # Read the initial timestamp and sample rate from the file's first two lines
-    initial_timestamp = int(uploaded_file.readline().decode().strip())
-    sample_rate = float(uploaded_file.readline().decode().strip())
+    initial_timestamp_str = uploaded_file.readline().decode().strip()
+    
+    # Convert the initial timestamp to a float and then to an integer
+    initial_timestamp = int(float(initial_timestamp_str))
+
+    sample_rate_str = uploaded_file.readline().decode().strip()
+    sample_rate = float(sample_rate_str)
 
     # For BVP data, generate timestamps based on sample rate
     if file_type == 'BVP':
@@ -21,6 +26,7 @@ def read_and_convert_data(uploaded_file, file_type):
 
     df['Elapsed Time'] = (df['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.strftime('%H:%M:%S:%f')
     return df
+
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
