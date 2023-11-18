@@ -178,7 +178,9 @@ if bvp_file and tags_file and ibi_file:
     bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
 
     # Process the BVP segment and compute HRV metrics
-    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps['BVP'], 64)
+    # Process the BVP segment and compute HRV metrics
+    # Directly use the first column of the bvp_segment_without_gaps DataFrame
+    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps.iloc[:, 0], 64)
 
     # Display results
     st.write(hrv_metrics)
