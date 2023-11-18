@@ -66,11 +66,14 @@ def find_closest_time(event_time, ibi_data):
     return closest_time
 
 def process_bvp_signal(bvp_data, sampling_rate):
-    # Assuming the BVP signal is in a specific column, e.g., the second column (index 1)
-    # Adjust the column index as per your data structure
-    bvp_signal = bvp_data.iloc[:, 1]  # Adjust the column index as needed
+    # Select the column that contains the BVP signal (ensure it's numeric)
+    # The column index might need to be adjusted based on your data structure
+    bvp_signal = bvp_data.iloc[:, 1]  # This should be a numeric column
 
-    # Clean the PPG signal
+    # Verify that the selected column is numeric
+    if not np.issubdtype(bvp_signal.dtype, np.number):
+        raise ValueError("Selected BVP signal column is not numeric.")
+
     processed_signal = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
     return processed_signal
 
