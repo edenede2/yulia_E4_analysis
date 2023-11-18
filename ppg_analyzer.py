@@ -66,8 +66,12 @@ def find_closest_time(event_time, ibi_data):
     return closest_time
 
 def process_bvp_signal(bvp_data, sampling_rate):
+    # Assuming the BVP signal is in a specific column, e.g., the second column (index 1)
+    # Adjust the column index as per your data structure
+    bvp_signal = bvp_data.iloc[:, 1]  # Adjust the column index as needed
+
     # Clean the PPG signal
-    processed_signal = nk.ppg_clean(bvp_data, sampling_rate=sampling_rate)
+    processed_signal = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
     return processed_signal
 
 
