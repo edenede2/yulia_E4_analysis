@@ -52,6 +52,28 @@ def read_bvp_data(uploaded_file):
 
     return bvp_data
 
+def find_gaps(ibi_data, threshold=2.0):
+    """
+    Identify gaps in IBI data where the gap between successive IBIs is greater than the threshold.
+    """
+    gaps = ibi_data[ibi_data.diff() > threshold].index
+    return gaps
+    
+def remove_gaps_from_bvp(bvp_data, gaps):
+    """
+    Remove segments in BVP data corresponding to gaps in IBI data.
+    """
+    # Convert gap indices to timestamps
+    gap_timestamps = bvp_data.iloc[gaps]['Timestamp']
+
+    # Remove BVP data segments that correspond to IBI gaps
+    for timestamp in gap_timestamps:
+        # Define a window around the gap timestamp to remove from BVP data
+        start = timestamp - datetime.timedelta(seconds=1)  # 1 second before gap
+        end = timestamp + datetime.timedelta(seconds=1)    # 1 second after gap
+        bvp_data = bvp_data[(bvp_data['Timestamp'] < start) | (bvp_data['Timestamp'] > end)]
+
+    return bvp_data
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
@@ -88,20 +110,20 @@ def find_closest_time(event_time_delta, ibi_data):
 
 
 
-def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
-    # Assuming bvp_data is a one-column DataFrame with the BVP signal
-    bvp_signal = bvp_data.iloc[:, 0]
-
+def process_and_analyze_bvp(bvp_segment, sampling_rate):
+    """
+    Clean the BVP signal and compute HRV metrics.
+    """
     # Clean the BVP signal
-    processed_signal = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
+    cleaned_bvp = nk.ppg_clean(bvp_segment, sampling_rate=sampling_rate)
 
-    # Find R-peaks in the processed BVP signal
-    r_peaks_info = nk.ppg_findpeaks(processed_signal)
-    r_peaks = r_peaks_info['PPG_Peaks']  # This should be a list or Series of R-peak indices
+    # Find R-peaks in the cleaned BVP signal
+    peaks_info = nk.ppg_findpeaks(cleaned_bvp, sampling_rate=sampling_rate)
+    r_peaks = peaks_info['PPG_Peaks']
 
     # Compute HRV metrics
-    hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=True)
-    return hrv_metrics, processed_signal
+    hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=False)
+    return hrv_metrics, cleaned_bvp, r_peaks
 
 
 
@@ -141,16 +163,18 @@ if bvp_file and tags_file and ibi_file:
     closest_start_time = pd.to_datetime(find_closest_time(start_tag_timedelta, ibi_data))
     closest_end_time = pd.to_datetime(find_closest_time(end_tag_timedelta, ibi_data))
     
-    # Extract the segment of BVP data between the selected start and end times
+        # Extract the segment of BVP data between the selected start and end times
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
-    
-    # Check if the segment is too short
-    if len(segment) <= 21:  # 21 is the padlen value that caused the error
-        st.error("Selected time range is too short for analysis. Please select a longer duration.")
-    else:
-        # Process the segment if it's long enough
-        hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
-        st.write(hrv_metrics)
-        st.line_chart(processed_segment)
-        st.download_button(label="Download HRV Metrics as CSV", data=hrv_metrics.to_csv(), file_name='hrv_metrics.csv', mime='text/csv')
-    
+
+    # Find gaps in the IBI data for the same segment
+    ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
+    gaps = find_gaps(ibi_segment['IBI'])
+
+    # Remove gaps from the BVP segment
+    bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
+
+    # Process the BVP segment and compute HRV metrics
+    hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps['BVP'], 64)
+
+    # Display results
+    st.write(hrv_metrics)
