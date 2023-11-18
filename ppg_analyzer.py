@@ -122,17 +122,21 @@ if bvp_file and tags_file and ibi_file:
     # Apply this function to the 'Elapsed Time' column
     tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(parse_time_duration)
     # User selects start and end tags for each event
+    # User selects the event name
+    event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
+    selected_event = st.selectbox('Select Event Name', event_names)
+
+    # User selects start and end tags for the chosen event
     event_tags = tags_data['Relative Time'].tolist()
     start_tag = st.selectbox('Select Start Tag', event_tags, key='start_tag')
     end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
 
-    # Find the corresponding time in data for start and end tags
-    closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data)
-    closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data)
+    # Convert start and end tags to Timestamps for comparison
+    closest_start_time = pd.to_datetime(find_closest_time(pd.to_timedelta(start_tag), ibi_data)['Timestamp'].values[0])
+    closest_end_time = pd.to_datetime(find_closest_time(pd.to_timedelta(end_tag), ibi_data)['Timestamp'].values[0])
 
-    # Process the segment between the selected start and end times
-    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
-    hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
+    # Extract the segment of BVP data between the selected start and end times
+    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
     st.write(hrv_metrics)
 
     # Visualization (if needed)
