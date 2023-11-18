@@ -136,7 +136,8 @@ if bvp_file and tags_file and ibi_file:
     closest_end_time = pd.to_datetime(find_closest_time(pd.to_timedelta(end_tag), ibi_data)['Timestamp'].values[0])
 
     # Extract the segment of BVP data between the selected start and end times
-    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
+    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+    hrv_metrics, processed_segment = process_bvp_signal_and_compute_hrv(segment, 64)
     st.write(hrv_metrics)
 
     # Visualization (if needed)
