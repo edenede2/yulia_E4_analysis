@@ -76,17 +76,20 @@ def find_closest_time(event_time, ibi_data):
     closest_time = ibi_data.iloc[(ibi_data['Timestamp'] - event_datetime).abs().argsort()[:1]]
     return closest_time
 
-def process_bvp_signal(bvp_data, sampling_rate):
-    # Check if bvp_data is a DataFrame and has only one column
-    if isinstance(bvp_data, pd.DataFrame) and bvp_data.shape[1] == 1:
-        # Extract the BVP signal as a series
-        bvp_signal = bvp_data.iloc[:, 0]
-    else:
-        raise ValueError("BVP data should be a DataFrame with only one column.")
+def process_bvp_signal_and_compute_hrv(bvp_data, sampling_rate):
+    # Assuming bvp_data is a one-column DataFrame with the BVP signal
+    bvp_signal = bvp_data.iloc[:, 0]
 
     # Clean the BVP signal
     processed_signal = nk.ppg_clean(bvp_signal, sampling_rate=sampling_rate)
-    return processed_signal
+
+    # Find R-peaks in the processed BVP signal
+    r_peaks = nk.ppg_findpeaks(processed_signal)
+
+    # Compute HRV metrics
+    hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=True)
+    return hrv_metrics
+
 
 
 
@@ -114,8 +117,8 @@ if bvp_file and tags_file and ibi_file:
     # Process BVP Signal
     processed_bvp = process_bvp_signal(bvp_data, 64)  # Assuming 64Hz sampling rate
 
-    # Calculate HRV metrics
-    hrv_metrics = nk.hrv(processed_bvp, sampling_rate=64, show=True)
+    # Process BVP Signal and Compute HRV Metrics
+    hrv_metrics = process_bvp_signal_and_compute_hrv(bvp_data, 64)
     st.write(hrv_metrics)
 
     # Visualization (if needed)
