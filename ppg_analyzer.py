@@ -179,6 +179,8 @@ if bvp_file and tags_file and ibi_file:
 
     # Find and display gaps
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+    ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
+    # Now find and display gaps
     gaps = find_gaps(ibi_segment['IBI'])
     st.write("Identified Gaps:", gaps)
 
