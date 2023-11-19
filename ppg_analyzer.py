@@ -119,8 +119,17 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     return hrv_metrics, cleaned_bvp, r_peaks
 
 def format_time_for_display(timestamp, initial_timestamp):
+    # Ensure both timestamps are in the same timezone format
+    if timestamp.tzinfo is not None and initial_timestamp.tzinfo is None:
+        # Convert initial_timestamp to timezone-aware
+        initial_timestamp = pd.to_datetime(initial_timestamp, utc=True)
+    elif timestamp.tzinfo is None and initial_timestamp.tzinfo is not None:
+        # Convert timestamp to timezone-aware
+        timestamp = pd.to_datetime(timestamp, utc=True)
+
     elapsed_time = timestamp - initial_timestamp
     return str(datetime.timedelta(seconds=int(elapsed_time.total_seconds())))
+
 
 
 
