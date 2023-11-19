@@ -41,11 +41,13 @@ def parse_time_duration(time_str):
 
 def find_gaps(ibi_data, threshold=20.0):
     """
-    Identify gaps in IBI data where the gap between successive IBIs is greater than the threshold.
+    Identify gaps in IBI data where the time difference between successive timestamps is greater than the threshold.
     """
-    gaps = ibi_data[ibi_data.diff() > threshold].index
-
-    st.write(gaps)
+    gaps = []
+    for i in range(1, len(ibi_data)):
+        time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
+        if time_diff > threshold:
+            gaps.append(i)
     return gaps
     
 def remove_gaps_from_bvp(bvp_data, gaps):
@@ -117,7 +119,8 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=False)
     return hrv_metrics, cleaned_bvp, r_peaks
 
-
+def format_time_for_display(timestamp):
+    return timestamp.strftime('%H:%M:%S')
 
 
 
@@ -163,10 +166,11 @@ if bvp_file and tags_file and ibi_file:
     closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data, reference_start_time)
     closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data, reference_start_time)
 
-        # Extract the segment of BVP data between the selected start and end times
-        # Display the start and end times for debugging
-    st.write("Selected Start Time:", closest_start_time)
-    st.write("Selected End Time:", closest_end_time)
+    formatted_start_time = format_time_for_display(closest_start_time)
+    formatted_end_time = format_time_for_display(closest_end_time)
+    
+    st.write("Selected Start Time:", formatted_start_time)
+    st.write("Selected End Time:", formatted_end_time)
 
     # Extract and display the length of the BVP segment
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
