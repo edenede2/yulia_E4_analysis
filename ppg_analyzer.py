@@ -44,27 +44,25 @@ def parse_time_duration(time_str):
 def find_gaps(ibi_data, threshold=20.0):
     gaps = []
     for i in range(1, len(ibi_data)):
-        time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
-        if time_diff > threshold:
-            gaps.append(ibi_data.iloc[i]['Timestamp'])
+        # Ensure ibi_data is a DataFrame with 'Timestamp' column
+        if 'Timestamp' in ibi_data.columns:
+            time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
+            if time_diff > threshold:
+                gaps.append(i)  # Append the index instead of timestamp
+        else:
+            raise ValueError("Timestamp column not found in ibi_data")
     return gaps
+
 
     
 def remove_gaps_from_bvp(bvp_data, gaps):
-    """
-    Remove segments in BVP data corresponding to gaps in IBI data.
-    """
-    # Convert gap indices to timestamps
-    gap_timestamps = bvp_data.iloc[gaps]['Timestamp']
-
-    # Remove BVP data segments that correspond to IBI gaps
-    for timestamp in gap_timestamps:
-        # Define a window around the gap timestamp to remove from BVP data
-        start = timestamp - datetime.timedelta(seconds=1)  # 1 second before gap
-        end = timestamp + datetime.timedelta(seconds=1)    # 1 second after gap
-        bvp_data = bvp_data[(bvp_data['Timestamp'] < start) | (bvp_data['Timestamp'] > end)]
-
+    for index in gaps:
+        if 0 < index < len(bvp_data):
+            start = bvp_data.iloc[index - 1]['Timestamp']
+            end = bvp_data.iloc[index]['Timestamp']
+            bvp_data = bvp_data[(bvp_data['Timestamp'] < start) | (bvp_data['Timestamp'] > end)]
     return bvp_data
+
 
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
@@ -120,8 +118,9 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=False)
     return hrv_metrics, cleaned_bvp, r_peaks
 
-def format_time_for_display(timestamp):
-    return timestamp.strftime('%H:%M:%S')
+def format_time_for_display(timestamp, initial_timestamp):
+    elapsed_time = timestamp - initial_timestamp
+    return str(datetime.timedelta(seconds=int(elapsed_time.total_seconds())))
 
 
 
@@ -166,9 +165,10 @@ if bvp_file and tags_file and ibi_file:
     # Now use reference_start_time in your function calls
     closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data, reference_start_time)
     closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data, reference_start_time)
+    
+    formatted_start_time = format_time_for_display(closest_start_time, reference_start_time)
+    formatted_end_time = format_time_for_display(closest_end_time, reference_start_time)
 
-    formatted_start_time = format_time_for_display(closest_start_time)
-    formatted_end_time = format_time_for_display(closest_end_time)
     
     st.write("Selected Start Time:", formatted_start_time)
     st.write("Selected End Time:", formatted_end_time)
