@@ -4,61 +4,38 @@ import numpy as np
 import datetime
 import neurokit2 as nk
 
-def read_and_convert_data(uploaded_file, file_type):
-    # Read the initial timestamp line
+
+# New Function Definitions
+def read_initial_timestamp(uploaded_file):
     initial_timestamp_line = uploaded_file.readline().decode().strip()
-    print("Initial Timestamp Line:", initial_timestamp_line)
+    initial_timestamp = float(initial_timestamp_line.split(',')[0].strip())
+    return initial_timestamp
 
-    # Extract initial timestamp value
-    initial_timestamp_parts = initial_timestamp_line.split(',')
-    try:
-        initial_timestamp = float(initial_timestamp_parts[0].strip())
-    except ValueError:
-        print("Error: Initial timestamp is not a numeric value.")
-        return None, None
+def read_bvp_data(uploaded_file):
+    initial_timestamp = read_initial_timestamp(uploaded_file)
+    sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
+    bvp_data = pd.read_csv(uploaded_file, header=None)
+    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
+    return bvp_data, initial_timestamp
 
-    print("Initial Timestamp:", initial_timestamp)    
-    if file_type == 'BVP':
-        # BVP specific processing
-        sample_rate_line = uploaded_file.readline().decode().strip()
-        sample_rate = float(sample_rate_line.split(',')[0].strip())
-        df = pd.read_csv(uploaded_file, header=None)
-        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df.index / sample_rate, unit='s')
-    elif file_type == 'IBI':
-        # IBI specific processing
-        df = pd.read_csv(uploaded_file, skiprows=1, header=None)
-        df.rename(columns={1: 'IBI'}, inplace=True)
-        df['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(df['IBI'], unit='s')
-    else:
-        # For other files, directly read into DataFrame assuming timestamps are in the first column
-        df = pd.read_csv(uploaded_file, header=None)
-        df['Timestamp'] = pd.to_datetime(df[0], unit='s')
+def read_ibi_data(uploaded_file):
+    initial_timestamp = read_initial_timestamp(uploaded_file)
+    ibi_data = pd.read_csv(uploaded_file, skiprows=1, header=None)
+    ibi_data.rename(columns={0: 'Relative Time', 1: 'IBI'}, inplace=True)
+    ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(ibi_data['Relative Time'], unit='s')
+    return ibi_data, initial_timestamp
 
+def read_tags_data(uploaded_file):
+    tags_data = pd.read_csv(uploaded_file, header=None)
+    tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s')
+    return tags_data, tags_data.iloc[0, 0]
 
-    # Calculate elapsed time from the reference start time
-    reference_start_time = pd.to_datetime(initial_timestamp, unit='s')
-    df['Elapsed Time'] = (df['Timestamp'] - reference_start_time).dt.total_seconds()
-    df['Elapsed Time'] = df['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
-
-    return df, initial_timestamp
 
 def parse_time_duration(time_str):
     # Split the time string into hours, minutes, and seconds
     h, m, s = time_str.split(':')
     return datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
-
-
-def read_bvp_data(uploaded_file):
-    # Read and ignore the first two lines (metadata)
-    initial_timestamp = float(uploaded_file.readline().decode().strip().split(',')[0])
-    sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
-
-    # Read the BVP data into a DataFrame
-    bvp_data = pd.read_csv(uploaded_file, header=None)
-    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
-
-    return bvp_data, initial_timestamp
 
 def find_gaps(ibi_data, threshold=20.0):
     """
@@ -155,8 +132,8 @@ ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
 if bvp_file and tags_file and ibi_file:
     # Read the data and capture initial_timestamp
     bvp_data, bvp_initial_timestamp = read_bvp_data(bvp_file)
-    tags_data, tags_initial_timestamp = read_and_convert_data(tags_file, 'tags')
-    ibi_data, ibi_initial_timestamp = read_and_convert_data(ibi_file, 'IBI')
+    tags_data, tags_initial_timestamp = read_tags_data(tags_file, 'tags')
+    ibi_data, ibi_initial_timestamp = read_ibi_data(ibi_file, 'IBI')
 
     # Use any of the initial timestamps (assuming they are the same)
     reference_start_time = pd.to_datetime(bvp_initial_timestamp, unit='s')
