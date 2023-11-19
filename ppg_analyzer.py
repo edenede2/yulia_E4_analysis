@@ -65,6 +65,8 @@ def find_gaps(ibi_data, threshold=20.0):
     Identify gaps in IBI data where the gap between successive IBIs is greater than the threshold.
     """
     gaps = ibi_data[ibi_data.diff() > threshold].index
+
+    st.write(gaps)
     return gaps
     
 def remove_gaps_from_bvp(bvp_data, gaps):
