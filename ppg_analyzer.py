@@ -22,14 +22,14 @@ def read_ibi_data(uploaded_file):
     initial_timestamp = read_initial_timestamp(uploaded_file)
     ibi_data = pd.read_csv(uploaded_file, skiprows=1, header=None)
     ibi_data.rename(columns={0: 'Relative Time', 1: 'IBI'}, inplace=True)
-    ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(ibi_data['Relative Time'], unit='s', utc=True)
+    ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(ibi_data['Relative Time'], unit='s')
     return ibi_data, initial_timestamp
 
 def read_tags_data(uploaded_file):
     tags_data = pd.read_csv(uploaded_file, header=None)
     tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s', utc=True)
     initial_timestamp = tags_data.iloc[0, 0]
-    tags_data['Elapsed Time'] = (tags_data['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s', utc=True)).dt.total_seconds()
+    tags_data['Elapsed Time'] = (tags_data['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.total_seconds()
     return tags_data, initial_timestamp
 
 
