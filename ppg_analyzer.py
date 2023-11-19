@@ -42,12 +42,20 @@ def parse_time_duration(time_str):
 
 
 def find_gaps(ibi_data, threshold=20.0):
-    gaps = []
+    gap_info = []
     for i in range(1, len(ibi_data)):
         time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
         if time_diff > threshold:
-            gaps.append(i)  # Append the index instead of the timestamp
-    return gaps
+            gap_start = ibi_data.iloc[i - 1]['Timestamp']
+            gap_end = ibi_data.iloc[i]['Timestamp']
+            gap_duration = time_diff
+            gap_info.append({
+                'start': format_time_for_display(gap_start, pd.to_datetime(0, unit='s', utc=True)),
+                'end': format_time_for_display(gap_end, pd.to_datetime(0, unit='s', utc=True)),
+                'duration': str(datetime.timedelta(seconds=int(gap_duration)))
+            })
+    return gap_info
+
 
 
 
@@ -142,6 +150,7 @@ def format_time_for_display(timestamp, initial_timestamp):
 
 
 
+
 # Streamlit App
 st.title('HRV Metrics from PPG Data')
 
@@ -149,8 +158,6 @@ st.title('HRV Metrics from PPG Data')
 bvp_file = st.file_uploader("Upload BVP.csv", type="csv")
 tags_file = st.file_uploader("Upload tags.csv", type="csv")
 ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
-
-
 
 if bvp_file and tags_file and ibi_file:
     # Read the data and capture initial_timestamp
@@ -160,58 +167,45 @@ if bvp_file and tags_file and ibi_file:
 
     # Use any of the initial timestamps (assuming they are the same)
     reference_start_time = pd.to_datetime(bvp_initial_timestamp, unit='s')
-
     
     # Convert the timestamp to relative time (since start of the recording)
-    # Apply this function to the 'Elapsed Time' column
     tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
-    # User selects start and end tags for each event
-    # User selects the event name
-    event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
-    selected_event = st.selectbox('Select Event Name', event_names)
-
-    # User selects start and end tags for the chosen event
     event_tags = tags_data['Relative Time'].tolist()
-   # Assuming this is part of your Streamlit app
-    start_tag = st.selectbox('Select Start Tag', event_tags, key='start_tag')
-    end_tag = st.selectbox('Select End Tag', event_tags, key='end_tag')
-    
-    # Now start_tag and end_tag are defined and can be used
-    start_tag_timedelta = pd.to_timedelta(start_tag)
-    end_tag_timedelta = pd.to_timedelta(end_tag)
-    
-    # Now use reference_start_time in your function calls
-    closest_start_time = find_closest_time(pd.to_timedelta(start_tag), ibi_data, reference_start_time)
-    closest_end_time = find_closest_time(pd.to_timedelta(end_tag), ibi_data, reference_start_time)
-    
-    formatted_start_time = format_time_for_display(closest_start_time, reference_start_time)
-    formatted_end_time = format_time_for_display(closest_end_time, reference_start_time)
 
-    
-    st.write("Selected Start Time:", formatted_start_time)
-    st.write("Selected End Time:", formatted_end_time)
+    event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
+    for event_name in event_names:
+        st.subheader(f'Event: {event_name}')
 
-    # Extract and display the length of the BVP segment
-    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
-    st.write("Length of BVP Segment before removing gaps:", len(segment))
+        # User selects start and end tags for the chosen event
+        start_tag = st.selectbox(f'Select Start Tag for {event_name}', event_tags, key=f'{event_name}_start_tag')
+        end_tag = st.selectbox(f'Select End Tag for {event_name}', event_tags, key=f'{event_name}_end_tag')
+        
+        start_tag_timedelta = pd.to_timedelta(start_tag)
+        end_tag_timedelta = pd.to_timedelta(end_tag)
+        
+        closest_start_time = find_closest_time(start_tag_timedelta, ibi_data, reference_start_time)
+        closest_end_time = find_closest_time(end_tag_timedelta, ibi_data, reference_start_time)
+        
+        formatted_start_time = format_time_for_display(closest_start_time, reference_start_time)
+        formatted_end_time = format_time_for_display(closest_end_time, reference_start_time)
+        
+        st.write("Selected Start Time:", formatted_start_time)
+        st.write("Selected End Time:", formatted_end_time)
 
-    # Find and display gaps
-    ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
-    gaps = find_gaps(ibi_segment)
-    st.write("Identified Gaps:", gaps)
+        segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
+        st.write("Length of BVP Segment before removing gaps:", len(segment))
 
-    # Assuming remove_gaps_from_bvp function returns the processed BVP segment
-    bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gaps, bvp_sample_rate)
-    
-    # Now display the length of the BVP segment after removing gaps
-    st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
-    
-    # Check if the segment is long enough for processing
-    if len(bvp_segment_without_gaps) > 21:  # Ensure the segment is longer than the padlen
-        # Process the BVP segment and compute HRV metrics
-        hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, 64)
-        st.write(hrv_metrics)
-    else:
-        # Handle the case where the segment is too short
-        st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
+        ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
+        gap_info = find_gaps(ibi_segment)
+        for gap in gap_info:
+            st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
+
+        bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_info, bvp_sample_rate)
+        st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
+        
+        if len(bvp_segment_without_gaps) > 21:
+            hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, bvp_sample_rate)
+            st.write(hrv_metrics)
+        else:
+            st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
 
