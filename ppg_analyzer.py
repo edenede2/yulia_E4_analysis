@@ -52,8 +52,8 @@ def find_gaps(ibi_data, threshold=4.0):
             gap_end = ibi_data.iloc[i]['Timestamp']
             gap_duration = time_diff
             gap_details.append({
-                'start': format_time_for_display(gap_start, pd.to_datetime(0, unit='s', utc=True)),
-                'end': format_time_for_display(gap_end, pd.to_datetime(0, unit='s', utc=True)),
+                'start': format_time_for_display(gap_start, bvp_initial_timestamp),
+                'end': format_time_for_display(gap_end, bvp_initial_timestamp),
                 'duration': str(datetime.timedelta(seconds=int(gap_duration)))
             })
     return gap_indices, gap_details
@@ -137,16 +137,14 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     hrv_metrics = nk.hrv(r_peaks, sampling_rate=sampling_rate, show=False)
     return hrv_metrics, cleaned_bvp, r_peaks
 
-def format_time_for_display(timestamp, initial_timestamp):
-    # Make both timestamps timezone-aware or timezone-naive
-    if timestamp.tzinfo is None and initial_timestamp.tzinfo is not None:
-        # Convert timestamp to timezone-aware
+def format_time_for_display(timestamp, bvp_initial_timestamp):
+    # Make sure both timestamps are timezone-aware
+    if timestamp.tzinfo is None:
         timestamp = pd.to_datetime(timestamp, utc=True)
-    elif timestamp.tzinfo is not None and initial_timestamp.tzinfo is None:
-        # Convert initial_timestamp to timezone-aware
-        initial_timestamp = pd.to_datetime(initial_timestamp, utc=True)
+    if bvp_initial_timestamp.tzinfo is None:
+        bvp_initial_timestamp = pd.to_datetime(bvp_initial_timestamp, utc=True)
 
-    elapsed_time = timestamp - initial_timestamp
+    elapsed_time = timestamp - bvp_initial_timestamp
     
     # Format time without the date component
     hours, remainder = divmod(elapsed_time.total_seconds(), 3600)
@@ -193,9 +191,9 @@ if bvp_file and tags_file and ibi_file:
         closest_start_time = find_closest_time(start_tag_timedelta, ibi_data, reference_start_time)
         closest_end_time = find_closest_time(end_tag_timedelta, ibi_data, reference_start_time)
         
-        formatted_start_time = format_time_for_display(closest_start_time, reference_start_time)
-        formatted_end_time = format_time_for_display(closest_end_time, reference_start_time)
-        
+        formatted_start_time = format_time_for_display(closest_start_time, bvp_initial_timestamp)
+        formatted_end_time = format_time_for_display(closest_end_time, bvp_initial_timestamp)
+
         st.write("Selected Start Time:", formatted_start_time)
         st.write("Selected End Time:", formatted_end_time)
 
