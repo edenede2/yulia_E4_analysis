@@ -12,11 +12,14 @@ def read_initial_timestamp(uploaded_file):
     return initial_timestamp
 
 def read_bvp_data(uploaded_file):
-    initial_timestamp = read_initial_timestamp(uploaded_file)
+    initial_timestamp_line = uploaded_file.readline().decode().strip()
+    initial_timestamp_float = float(initial_timestamp_line.split(',')[0].strip())
+    initial_timestamp = pd.to_datetime(initial_timestamp_float, unit='s', utc=True)  # Convert to datetime
     sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
     bvp_data = pd.read_csv(uploaded_file, header=None)
-    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
+    bvp_data['Timestamp'] = initial_timestamp + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
     return bvp_data, initial_timestamp, sample_rate
+
 
 def read_ibi_data(uploaded_file):
     initial_timestamp = read_initial_timestamp(uploaded_file)
@@ -138,12 +141,6 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     return hrv_metrics, cleaned_bvp, r_peaks
 
 def format_time_for_display(timestamp, bvp_initial_timestamp):
-    # Make sure both timestamps are timezone-aware
-    if timestamp.tzinfo is None:
-        timestamp = pd.to_datetime(timestamp, utc=True)
-    if bvp_initial_timestamp.tzinfo is None:
-        bvp_initial_timestamp = pd.to_datetime(bvp_initial_timestamp, utc=True)
-
     elapsed_time = timestamp - bvp_initial_timestamp
     
     # Format time without the date component
