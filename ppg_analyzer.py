@@ -138,13 +138,21 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     return hrv_metrics, cleaned_bvp, r_peaks
 
 def format_time_for_display(timestamp, initial_timestamp):
-    # Calculate elapsed time since the initial timestamp
+    # Make both timestamps timezone-aware or timezone-naive
+    if timestamp.tzinfo is None and initial_timestamp.tzinfo is not None:
+        # Convert timestamp to timezone-aware
+        timestamp = pd.to_datetime(timestamp, utc=True)
+    elif timestamp.tzinfo is not None and initial_timestamp.tzinfo is None:
+        # Convert initial_timestamp to timezone-aware
+        initial_timestamp = pd.to_datetime(initial_timestamp, utc=True)
+
     elapsed_time = timestamp - initial_timestamp
     
     # Format time without the date component
     hours, remainder = divmod(elapsed_time.total_seconds(), 3600)
     minutes, seconds = divmod(remainder, 60)
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
+
 
 
 
@@ -199,9 +207,10 @@ if bvp_file and tags_file and ibi_file:
         for gap in gap_info:
             st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
+
+        # Correct the call to remove_gaps_from_bvp function
         bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_indices, bvp_sample_rate)
 
-        bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_info, bvp_sample_rate)
         st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
         
         if len(bvp_segment_without_gaps) > 21:
