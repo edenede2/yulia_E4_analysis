@@ -69,7 +69,7 @@ def remove_gaps_from_bvp(bvp_data, gaps):
 # Helper Functions
 def convert_to_elapsed_time(df, initial_timestamp):
     # Convert initial timestamp to datetime
-    initial_time = pd.to_datetime(initial_timestamp, unit='s')
+    initial_time = pd.to_datetime(initial_timestamp, unit='s', utc=True)
     
     # Calculate time elapsed since initial timestamp for each row
     df['Elapsed Time'] = df.index / df.iloc[1, 0] + initial_timestamp
@@ -79,7 +79,7 @@ def convert_to_elapsed_time(df, initial_timestamp):
 def match_event_tags(tags_df, data_df):
     # Assuming tags_df contains Unix timestamps of events
     # Convert these to datetime
-    tags_df['Timestamp'] = pd.to_datetime(tags_df[0], unit='s')
+    tags_df['Timestamp'] = pd.to_datetime(tags_df[0], unit='s', utc=True)
 
     # Find corresponding times in data_df
     matched_events = pd.merge_asof(tags_df, data_df, on='Timestamp')
