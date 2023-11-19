@@ -44,14 +44,11 @@ def parse_time_duration(time_str):
 def find_gaps(ibi_data, threshold=20.0):
     gaps = []
     for i in range(1, len(ibi_data)):
-        # Ensure ibi_data is a DataFrame with 'Timestamp' column
-        if 'Timestamp' in ibi_data.columns:
-            time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
-            if time_diff > threshold:
-                gaps.append(i)  # Append the index instead of timestamp
-        else:
-            raise ValueError("Timestamp column not found in ibi_data")
+        time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
+        if time_diff > threshold:
+            gaps.append(i)  # Append the index instead of the timestamp
     return gaps
+
 
 
     
@@ -190,7 +187,7 @@ if bvp_file and tags_file and ibi_file:
     segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
     ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
     # Now find and display gaps
-    gaps = find_gaps(ibi_segment['IBI'])
+    gaps = find_gaps(ibi_segment)
     st.write("Identified Gaps:", gaps)
 
     # Remove gaps from the BVP segment and process
