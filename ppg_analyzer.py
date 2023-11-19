@@ -132,8 +132,8 @@ ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
 if bvp_file and tags_file and ibi_file:
     # Read the data and capture initial_timestamp
     bvp_data, bvp_initial_timestamp = read_bvp_data(bvp_file)
-    tags_data, tags_initial_timestamp = read_tags_data(tags_file, 'tags')
-    ibi_data, ibi_initial_timestamp = read_ibi_data(ibi_file, 'IBI')
+    tags_data, tags_initial_timestamp = read_tags_data(tags_file)
+    ibi_data, ibi_initial_timestamp = read_ibi_data(ibi_file)
 
     # Use any of the initial timestamps (assuming they are the same)
     reference_start_time = pd.to_datetime(bvp_initial_timestamp, unit='s')
