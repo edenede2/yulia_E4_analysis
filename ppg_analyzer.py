@@ -16,7 +16,7 @@ def read_bvp_data(uploaded_file):
     sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
     bvp_data = pd.read_csv(uploaded_file, header=None)
     bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
-    return bvp_data, initial_timestamp
+    return bvp_data, initial_timestamp, sample_rate
 
 def read_ibi_data(uploaded_file):
     initial_timestamp = read_initial_timestamp(uploaded_file)
@@ -52,13 +52,25 @@ def find_gaps(ibi_data, threshold=20.0):
 
 
     
-def remove_gaps_from_bvp(bvp_data, gaps):
+def remove_gaps_from_bvp(bvp_data, ibi_data, gaps, bvp_sampling_rate):
     for index in gaps:
-        if 0 < index < len(bvp_data):
-            start = bvp_data.iloc[index - 1]['Timestamp']
-            end = bvp_data.iloc[index]['Timestamp']
-            bvp_data = bvp_data[(bvp_data['Timestamp'] < start) | (bvp_data['Timestamp'] > end)]
+        if index > 0 and index < len(ibi_data):
+            gap_start = ibi_data.iloc[index - 1]['Timestamp']
+            gap_end = ibi_data.iloc[index]['Timestamp']
+            gap_duration = (gap_end - gap_start).total_seconds()
+
+            # Calculate the number of BVP data points to remove
+            bvp_points_to_remove = int(gap_duration * bvp_sampling_rate)
+
+            # Find the start and end indices in BVP data to remove
+            bvp_start_index = bvp_data[bvp_data['Timestamp'] >= gap_start].index[0]
+            bvp_end_index = bvp_start_index + bvp_points_to_remove
+
+            # Remove the segment from BVP data
+            bvp_data = bvp_data.drop(bvp_data.index[bvp_start_index:bvp_end_index])
+
     return bvp_data
+
 
 
 # Helper Functions
@@ -142,7 +154,7 @@ ibi_file = st.file_uploader("Upload IBI.csv", type="csv")
 
 if bvp_file and tags_file and ibi_file:
     # Read the data and capture initial_timestamp
-    bvp_data, bvp_initial_timestamp = read_bvp_data(bvp_file)
+    bvp_data, bvp_initial_timestamp, bvp_sample_rate = read_bvp_data(bvp_file)
     tags_data, tags_initial_timestamp = read_tags_data(tags_file)
     ibi_data, ibi_initial_timestamp = read_ibi_data(ibi_file)
 
@@ -184,14 +196,12 @@ if bvp_file and tags_file and ibi_file:
     st.write("Length of BVP Segment before removing gaps:", len(segment))
 
     # Find and display gaps
-    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
     ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
-    # Now find and display gaps
     gaps = find_gaps(ibi_segment)
     st.write("Identified Gaps:", gaps)
 
     # Assuming remove_gaps_from_bvp function returns the processed BVP segment
-    bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
+    bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gaps, bvp_sample_rate)
     
     # Now display the length of the BVP segment after removing gaps
     st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
