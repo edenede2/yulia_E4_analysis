@@ -28,7 +28,9 @@ def read_ibi_data(uploaded_file):
 def read_tags_data(uploaded_file):
     tags_data = pd.read_csv(uploaded_file, header=None)
     tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s')
-    return tags_data, tags_data.iloc[0, 0]
+    initial_timestamp = tags_data.iloc[0, 0]
+    tags_data['Elapsed Time'] = (tags_data['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.total_seconds()
+    return tags_data, initial_timestamp
 
 
 def parse_time_duration(time_str):
@@ -141,7 +143,7 @@ if bvp_file and tags_file and ibi_file:
     
     # Convert the timestamp to relative time (since start of the recording)
     # Apply this function to the 'Elapsed Time' column
-    tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(parse_time_duration)
+    tags_data['Relative Time'] = tags_data['Elapsed Time'].apply(lambda x: str(datetime.timedelta(seconds=int(x))))
     # User selects start and end tags for each event
     # User selects the event name
     event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
