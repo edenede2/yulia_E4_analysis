@@ -15,21 +15,21 @@ def read_bvp_data(uploaded_file):
     initial_timestamp = read_initial_timestamp(uploaded_file)
     sample_rate = float(uploaded_file.readline().decode().strip().split(',')[0])
     bvp_data = pd.read_csv(uploaded_file, header=None)
-    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
+    bvp_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(bvp_data.index / sample_rate, unit='s')
     return bvp_data, initial_timestamp
 
 def read_ibi_data(uploaded_file):
     initial_timestamp = read_initial_timestamp(uploaded_file)
     ibi_data = pd.read_csv(uploaded_file, skiprows=1, header=None)
     ibi_data.rename(columns={0: 'Relative Time', 1: 'IBI'}, inplace=True)
-    ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s') + pd.to_timedelta(ibi_data['Relative Time'], unit='s')
+    ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(ibi_data['Relative Time'], unit='s', utc=True)
     return ibi_data, initial_timestamp
 
 def read_tags_data(uploaded_file):
     tags_data = pd.read_csv(uploaded_file, header=None)
-    tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s')
+    tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s', utc=True)
     initial_timestamp = tags_data.iloc[0, 0]
-    tags_data['Elapsed Time'] = (tags_data['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s')).dt.total_seconds()
+    tags_data['Elapsed Time'] = (tags_data['Timestamp'] - pd.to_datetime(initial_timestamp, unit='s', utc=True)).dt.total_seconds()
     return tags_data, initial_timestamp
 
 
@@ -40,15 +40,13 @@ def parse_time_duration(time_str):
 
 
 def find_gaps(ibi_data, threshold=20.0):
-    """
-    Identify gaps in IBI data where the time difference between successive timestamps is greater than the threshold.
-    """
     gaps = []
     for i in range(1, len(ibi_data)):
         time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
         if time_diff > threshold:
-            gaps.append(i)
+            gaps.append(ibi_data.iloc[i]['Timestamp'])
     return gaps
+
     
 def remove_gaps_from_bvp(bvp_data, gaps):
     """
