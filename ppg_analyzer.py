@@ -41,7 +41,7 @@ def parse_time_duration(time_str):
     return datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
 
-def find_gaps(ibi_data, threshold=2.0):
+def find_gaps(ibi_data, threshold=20.0):
     gaps = []
     for i in range(1, len(ibi_data)):
         time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
