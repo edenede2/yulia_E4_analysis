@@ -41,20 +41,22 @@ def parse_time_duration(time_str):
     return datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
 
-def find_gaps(ibi_data, threshold=20.0):
-    gap_info = []
+def find_gaps(ibi_data, threshold=4.0):
+    gap_indices = []
+    gap_details = []  # Store detailed gap information for display
     for i in range(1, len(ibi_data)):
         time_diff = (ibi_data.iloc[i]['Timestamp'] - ibi_data.iloc[i - 1]['Timestamp']).total_seconds()
         if time_diff > threshold:
+            gap_indices.append(i)
             gap_start = ibi_data.iloc[i - 1]['Timestamp']
             gap_end = ibi_data.iloc[i]['Timestamp']
             gap_duration = time_diff
-            gap_info.append({
+            gap_details.append({
                 'start': format_time_for_display(gap_start, pd.to_datetime(0, unit='s', utc=True)),
                 'end': format_time_for_display(gap_end, pd.to_datetime(0, unit='s', utc=True)),
                 'duration': str(datetime.timedelta(seconds=int(gap_duration)))
             })
-    return gap_info
+    return gap_indices, gap_details
 
 
 
@@ -136,16 +138,13 @@ def process_and_analyze_bvp(bvp_segment, sampling_rate):
     return hrv_metrics, cleaned_bvp, r_peaks
 
 def format_time_for_display(timestamp, initial_timestamp):
-    # Ensure both timestamps are in the same timezone format
-    if timestamp.tzinfo is not None and initial_timestamp.tzinfo is None:
-        # Convert initial_timestamp to timezone-aware
-        initial_timestamp = pd.to_datetime(initial_timestamp, utc=True)
-    elif timestamp.tzinfo is None and initial_timestamp.tzinfo is not None:
-        # Convert timestamp to timezone-aware
-        timestamp = pd.to_datetime(timestamp, utc=True)
-
+    # Calculate elapsed time since the initial timestamp
     elapsed_time = timestamp - initial_timestamp
-    return str(datetime.timedelta(seconds=int(elapsed_time.total_seconds())))
+    
+    # Format time without the date component
+    hours, remainder = divmod(elapsed_time.total_seconds(), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
 
 
@@ -196,9 +195,11 @@ if bvp_file and tags_file and ibi_file:
         st.write("Length of BVP Segment before removing gaps:", len(segment))
 
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
-        gap_info = find_gaps(ibi_segment)
+        gap_indices, gap_info = find_gaps(ibi_segment)
         for gap in gap_info:
             st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
+
+        bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_indices, bvp_sample_rate)
 
         bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_info, bvp_sample_rate)
         st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
