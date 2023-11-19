@@ -96,9 +96,10 @@ def find_closest_time(event_time_delta, ibi_data, reference_start_time):
     closest_index = (ibi_data['Elapsed Seconds'] - event_time_seconds).abs().idxmin()
     closest_seconds = ibi_data.iloc[closest_index, 0]
 
-    # Convert to actual timestamp
-    closest_timestamp = reference_start_time + datetime.timedelta(seconds=closest_seconds)
+    # Convert to actual timestamp in UTC
+    closest_timestamp = pd.to_datetime(reference_start_time, unit='s', utc=True) + datetime.timedelta(seconds=closest_seconds)
     return closest_timestamp
+
 
 
 def process_and_analyze_bvp(bvp_segment, sampling_rate):
