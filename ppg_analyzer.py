@@ -191,8 +191,9 @@ if bvp_file and tags_file and ibi_file:
     st.write("Identified Gaps:", gaps)
 
     # Remove gaps from the BVP segment and process
-    bvp_segment_without_gaps = remove_gaps_from_bvp(segment, gaps)
+    st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
 
+    
     # Check if the segment is long enough for processing
     if len(bvp_segment_without_gaps) > 21:  # Ensure the segment is longer than the padlen
         # Process the BVP segment and compute HRV metrics
