@@ -44,7 +44,7 @@ def parse_time_duration(time_str):
     return datetime.timedelta(hours=int(h), minutes=int(m), seconds=int(s))
 
 
-def find_gaps(ibi_data, threshold=4.0):
+def find_gaps(ibi_data, threshold, bvp_initial_timestamp):
     gap_indices = []
     gap_details = []  # Store detailed gap information for display
     for i in range(1, len(ibi_data)):
@@ -198,7 +198,7 @@ if bvp_file and tags_file and ibi_file:
         st.write("Length of BVP Segment before removing gaps:", len(segment))
 
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
-        gap_indices, gap_info = find_gaps(ibi_segment)
+        gap_indices, gap_info = find_gaps(ibi_segment, 4.0, bvp_initial_timestamp)
         for gap in gap_info:
             st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
