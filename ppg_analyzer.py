@@ -25,6 +25,7 @@ def read_ibi_data(uploaded_file):
     ibi_data['Timestamp'] = pd.to_datetime(initial_timestamp, unit='s', utc=True) + pd.to_timedelta(ibi_data['Relative Time'], unit='s')
     return ibi_data, initial_timestamp
 
+
 def read_tags_data(uploaded_file):
     tags_data = pd.read_csv(uploaded_file, header=None)
     tags_data['Timestamp'] = pd.to_datetime(tags_data[0], unit='s', utc=True)
@@ -176,7 +177,7 @@ if bvp_file and tags_file and ibi_file:
     st.write("Length of BVP Segment before removing gaps:", len(segment))
 
     # Find and display gaps
-    ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
+    segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
     gaps = find_gaps(ibi_segment['IBI'])
     st.write("Identified Gaps:", gaps)
 
