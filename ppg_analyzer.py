@@ -227,9 +227,9 @@ if bvp_file and tags_file and ibi_file:
     event_tags = tags_data['Relative Time'].tolist()
 
     event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
-    for event_name in event_names:
+   for event_name in event_names:
         st.subheader(f'Event: {event_name}')
-
+    
         # User selects start and end tags for the chosen event
         start_tag = st.selectbox(f'Select Start Tag for {event_name}', event_tags, key=f'{event_name}_start_tag')
         end_tag = st.selectbox(f'Select End Tag for {event_name}', event_tags, key=f'{event_name}_end_tag')
@@ -242,10 +242,10 @@ if bvp_file and tags_file and ibi_file:
         
         formatted_start_time = format_time_for_display(closest_start_time, bvp_initial_timestamp)
         formatted_end_time = format_time_for_display(closest_end_time, bvp_initial_timestamp)
-
+    
         st.write("Selected Start Time:", formatted_start_time)
         st.write("Selected End Time:", formatted_end_time)
-
+    
         segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
 
         # After calculating the segment length
@@ -254,11 +254,6 @@ if bvp_file and tags_file and ibi_file:
 
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
         gap_indices, gap_info = find_gaps(ibi_segment, 4.0, bvp_initial_timestamp)
-        
-                
-        
-
-        
         
         for gap in gap_info:
             st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
@@ -272,12 +267,11 @@ if bvp_file and tags_file and ibi_file:
         st.write("Length of BVP Segment before removing gaps:", formatted_length_before)
         st.write("Length of BVP Segment after removing gaps:", formatted_length_after)        
         
-        if len(bvp_segment_without_gaps) > 21:
-            hrv_metrics, gap_info = analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate=64)
+       if len(bvp_segment_without_gaps) > 21:
+            hrv_metrics, gap_info = analyze_hrv_from_ppg(bvp_data, ibi_data, closest_start_time, closest_end_time, sampling_rate=64)
             st.write(hrv_metrics)
             st.write("Total number of gaps:", gap_info['total_gaps'])
             st.write("Total duration of gaps (seconds):", gap_info['total_gap_duration'])
             st.write("Longest gap (seconds):", gap_info['longest_gap'])
         else:
             st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
-
