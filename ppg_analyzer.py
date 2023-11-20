@@ -255,9 +255,10 @@ if bvp_file and tags_file and ibi_file:
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
         gap_indices, gap_info = find_gaps(ibi_segment, 4.0, bvp_initial_timestamp)
         
-        for gap in gap_info:
-            st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
-
+        # Inside your Streamlit loop for each event
+        with st.expander(f"View gap details for {event_name}"):
+            for gap in gap_info:
+                st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
         # Correct the call to remove_gaps_from_bvp function
         bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_indices, bvp_sample_rate)
