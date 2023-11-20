@@ -156,7 +156,53 @@ def convert_length_to_time(length, sample_rate):
     return "{:02}:{:02}:{:02}.{:03}".format(int(hours), int(minutes), int(seconds), int(milliseconds))
 
 
+def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate, gap_threshold=4.0):
+    # Convert timestamps to datetime if necessary
+    bvp_data['Timestamp'] = pd.to_datetime(bvp_data['Timestamp'])
+    ibi_data['Timestamp'] = pd.to_datetime(ibi_data['Timestamp'])
 
+    # Select data segment for the event
+    segment = bvp_data[(bvp_data['Timestamp'] >= event_start) & (bvp_data['Timestamp'] <= event_end)]
+
+    # Clean the PPG signal
+    cleaned_bvp = nk.ppg_clean(segment['PPG'], sampling_rate=sampling_rate)
+
+    # Find R-peaks in the cleaned PPG signal
+    peaks_info = nk.ppg_findpeaks(cleaned_bvp, sampling_rate=sampling_rate)
+    r_peaks = peaks_info['PPG_Peaks']
+
+    # Compute HRV metrics (focusing on time-domain metrics)
+    hrv_metrics = nk.hrv_time(r_peaks, sampling_rate=sampling_rate, show=False)
+
+    # Find and handle gaps in IBI data
+    gap_info = find_and_summarize_gaps(ibi_data, event_start, event_end, gap_threshold)
+
+    return hrv_metrics, gap_info
+
+# Helper function to find and summarize gaps
+def find_and_summarize_gaps(ibi_data, start_time, end_time, threshold):
+    # Filter IBI data for the selected event
+    ibi_segment = ibi_data[(ibi_data['Timestamp'] >= start_time) & (ibi_data['Timestamp'] <= end_time)]
+
+    # Find gaps
+    gap_indices = []
+    total_gap_duration = 0
+    longest_gap = 0
+    for i in range(1, len(ibi_segment)):
+        time_diff = (ibi_segment.iloc[i]['Timestamp'] - ibi_segment.iloc[i - 1]['Timestamp']).total_seconds()
+        if time_diff > threshold:
+            gap_indices.append(i)
+            total_gap_duration += time_diff
+            longest_gap = max(longest_gap, time_diff)
+
+    num_gaps = len(gap_indices)
+    gap_summary = {
+        "total_gaps": num_gaps,
+        "total_gap_duration": total_gap_duration,
+        "longest_gap": longest_gap
+    }
+    
+    return gap_summary
 
 
 # Streamlit App
@@ -227,8 +273,10 @@ if bvp_file and tags_file and ibi_file:
         st.write("Length of BVP Segment after removing gaps:", formatted_length_after)        
         
         if len(bvp_segment_without_gaps) > 21:
-            hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, bvp_sample_rate)
+            hrv_metrics, gap_info = analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate=64)
             st.write(hrv_metrics)
-        else:
+            st.write("Total number of gaps:", gap_info['total_gaps'])
+            st.write("Total duration of gaps (seconds):", gap_info['total_gap_duration'])
+            st.write("Longest gap (seconds):", gap_info['longest_gap'])        else:
             st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
 
