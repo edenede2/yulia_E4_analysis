@@ -165,7 +165,7 @@ def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_ra
     segment = bvp_data[(bvp_data['Timestamp'] >= event_start) & (bvp_data['Timestamp'] <= event_end)]
 
     # Clean the PPG signal
-    cleaned_bvp = nk.ppg_clean(segment['PPG'], sampling_rate=sampling_rate)
+    cleaned_bvp = nk.ppg_clean(segment, sampling_rate=sampling_rate)
 
     # Find R-peaks in the cleaned PPG signal
     peaks_info = nk.ppg_findpeaks(cleaned_bvp, sampling_rate=sampling_rate)
