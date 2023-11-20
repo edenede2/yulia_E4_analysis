@@ -277,6 +277,7 @@ if bvp_file and tags_file and ibi_file:
             st.write(hrv_metrics)
             st.write("Total number of gaps:", gap_info['total_gaps'])
             st.write("Total duration of gaps (seconds):", gap_info['total_gap_duration'])
-            st.write("Longest gap (seconds):", gap_info['longest_gap'])        else:
+            st.write("Longest gap (seconds):", gap_info['longest_gap'])
+        else:
             st.error("The selected BVP data segment is too short for analysis after removing gaps. Please select a longer duration or different event.")
 
