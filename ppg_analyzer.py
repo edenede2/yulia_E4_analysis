@@ -148,6 +148,12 @@ def format_time_for_display(timestamp, bvp_initial_timestamp):
     minutes, seconds = divmod(remainder, 60)
     return "{:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
 
+def convert_length_to_time(length, sample_rate):
+    total_seconds = length / sample_rate
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = (seconds - int(seconds)) * 1000
+    return "{:02}:{:02}:{:02}.{:03}".format(int(hours), int(minutes), int(seconds), int(milliseconds))
 
 
 
@@ -195,18 +201,30 @@ if bvp_file and tags_file and ibi_file:
         st.write("Selected End Time:", formatted_end_time)
 
         segment = bvp_data[(bvp_data['Timestamp'] >= closest_start_time) & (bvp_data['Timestamp'] <= closest_end_time)]
-        st.write("Length of BVP Segment before removing gaps:", len(segment))
+
+        # After calculating the segment length
+        length_before = len(segment)
+        formatted_length_before = convert_length_to_time(length_before, bvp_sample_rate)
 
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
         gap_indices, gap_info = find_gaps(ibi_segment, 4.0, bvp_initial_timestamp)
+        
+                
+        
+
+        
+        
         for gap in gap_info:
             st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
 
         # Correct the call to remove_gaps_from_bvp function
         bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_indices, bvp_sample_rate)
+        length_after = len(bvp_segment_without_gaps)
+        formatted_length_after = convert_length_to_time(length_after, bvp_sample_rate)
 
-        st.write("Length of BVP Segment after removing gaps:", len(bvp_segment_without_gaps))
+        st.write("Length of BVP Segment before removing gaps:", formatted_length_before)
+        st.write("Length of BVP Segment after removing gaps:", formatted_length_after)        
         
         if len(bvp_segment_without_gaps) > 21:
             hrv_metrics, cleaned_bvp, r_peaks = process_and_analyze_bvp(bvp_segment_without_gaps, bvp_sample_rate)
