@@ -267,7 +267,7 @@ if bvp_file and tags_file and ibi_file:
         st.write("Length of BVP Segment before removing gaps:", formatted_length_before)
         st.write("Length of BVP Segment after removing gaps:", formatted_length_after)        
         
-       if len(bvp_segment_without_gaps) > 21:
+        if len(bvp_segment_without_gaps) > 21:
             hrv_metrics, gap_info = analyze_hrv_from_ppg(bvp_data, ibi_data, closest_start_time, closest_end_time, sampling_rate=64)
             st.write(hrv_metrics)
             st.write("Total number of gaps:", gap_info['total_gaps'])
