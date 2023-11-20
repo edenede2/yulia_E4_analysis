@@ -227,7 +227,7 @@ if bvp_file and tags_file and ibi_file:
     event_tags = tags_data['Relative Time'].tolist()
 
     event_names = ["Baseline", "5-Digit test", "Exposure", "Event1", "Event2"]
-   for event_name in event_names:
+    for event_name in event_names:
         st.subheader(f'Event: {event_name}')
     
         # User selects start and end tags for the chosen event
