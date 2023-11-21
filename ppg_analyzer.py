@@ -287,12 +287,12 @@ if bvp_file and tags_file and ibi_file:
         formatted_length_before = convert_length_to_time(length_before, bvp_sample_rate)
 
         # Get user-defined threshold for gap detection
-        gap_threshold = st.number_input("Enter the threshold for gap detection (in seconds) for {event_name}", 
+        gap_threshold = st.number_input(f"Enter the threshold for gap detection (in seconds) for {event_name}", 
                                         min_value=0.0, value=4.0, step=0.1, key=f"gap_threshold_{event_name}")
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
         gap_indices, gap_info = find_gaps(ibi_segment, gap_threshold, bvp_initial_timestamp)
 
-        with st.expander("View gap details for {event_name}"):
+        with st.expander(f"View gap details for {event_name}"):
             for gap in gap_info:
                 st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
@@ -308,7 +308,7 @@ if bvp_file and tags_file and ibi_file:
             unique_key = f"analyze_{event_name}_{i}_{len(seg)}"
             if st.button(f"Analyze Segment {i+1}", key=unique_key):
                 # Allow user to specify the duration for analysis
-                segment_duration = st.text_input("Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
+                segment_duration = st.text_input(f"Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
                 # Convert input duration to seconds
                 min_sec = [int(t) for t in segment_duration.split(':')]
                 analysis_duration_seconds = min_sec[0] * 60 + min_sec[1]
