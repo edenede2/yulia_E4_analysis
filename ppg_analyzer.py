@@ -303,8 +303,10 @@ if bvp_file and tags_file and ibi_file:
         for i, seg in enumerate(sorted_segments):
             duration = convert_length_to_time(len(seg), bvp_sample_rate)
             st.write(f"Segment {i+1} Duration: {duration}")
-
-            if st.button(f"Analyze Segment {i+1}", key=f"analyze_{event_name}_{i}"):
+        
+            # Create a unique key for each button
+            unique_key = f"analyze_{event_name}_{i}_{len(seg)}"
+            if st.button(f"Analyze Segment {i+1}", key=unique_key):
                 # Allow user to specify the duration for analysis
                 segment_duration = st.text_input("Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
                 # Convert input duration to seconds
