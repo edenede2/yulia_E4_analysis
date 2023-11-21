@@ -183,28 +183,7 @@ def convert_length_to_time(length, sample_rate):
     return "{:02}:{:02}:{:02}.{:03}".format(int(hours), int(minutes), int(seconds), int(milliseconds))
 
 
-def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate, gap_threshold=4.0):
-    # Convert timestamps to datetime if necessary
-    bvp_data['Timestamp'] = pd.to_datetime(bvp_data['Timestamp'])
-    ibi_data['Timestamp'] = pd.to_datetime(ibi_data['Timestamp'])
 
-    # Select data segment for the event
-    segment = bvp_data[(bvp_data['Timestamp'] >= event_start) & (bvp_data['Timestamp'] <= event_end)]
-
-    # Clean the PPG signal
-    cleaned_bvp = nk.ppg_clean(segment[0], sampling_rate=sampling_rate)
-
-    # Find R-peaks in the cleaned PPG signal
-    peaks_info = nk.ppg_findpeaks(cleaned_bvp, sampling_rate=sampling_rate)
-    r_peaks = peaks_info['PPG_Peaks']
-
-    # Compute HRV metrics (focusing on time-domain metrics)
-    hrv_metrics = nk.hrv_time(r_peaks, sampling_rate=sampling_rate, show=False)
-
-    # Find and handle gaps in IBI data
-    gap_info = find_and_summarize_gaps(ibi_data, event_start, event_end, gap_threshold)
-
-    return hrv_metrics, gap_info
 
 # Helper function to find and summarize gaps
 def find_and_summarize_gaps(ibi_data, start_time, end_time, threshold):
@@ -230,6 +209,34 @@ def find_and_summarize_gaps(ibi_data, start_time, end_time, threshold):
     }
     
     return gap_summary
+
+def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate, gap_threshold=4.0):
+    # Convert timestamps to datetime if necessary
+    bvp_data = bvp_data.copy()
+    bvp_data['Timestamp'] = pd.to_datetime(bvp_data['Timestamp'])
+    ibi_data['Timestamp'] = pd.to_datetime(ibi_data['Timestamp'])
+
+    # Select data segment for the event
+    segment = bvp_data[(bvp_data['Timestamp'] >= event_start) & (bvp_data['Timestamp'] <= event_end)]
+
+    # Resample (interpolate) the PPG signal
+    desired_length = 600  # Adjust as needed
+    resampled_segment = nk.signal_resample(segment[0], desired_length=desired_length, method="interpolation")
+
+    # Filter the resampled PPG signal
+    filtered_bvp = nk.signal_filter(resampled_segment, sampling_rate=desired_length, lowcut=0.5, highcut=3.0, method="butterworth")
+
+    # Find R-peaks in the filtered PPG signal
+    peaks_info = nk.ppg_findpeaks(filtered_bvp, sampling_rate=desired_length)
+    r_peaks = peaks_info['PPG_Peaks']
+
+    # Compute HRV metrics (focusing on time-domain metrics)
+    hrv_metrics = nk.hrv_time(r_peaks, sampling_rate=desired_length, show=False)
+
+    # Find and handle gaps in IBI data
+    gap_info = find_and_summarize_gaps(ibi_data, event_start, event_end, gap_threshold)
+
+    return hrv_metrics, gap_info
 
 
 # Streamlit App
@@ -280,26 +287,35 @@ if bvp_file and tags_file and ibi_file:
         formatted_length_before = convert_length_to_time(length_before, bvp_sample_rate)
 
         # Get user-defined threshold for gap detection
-        gap_threshold = st.number_input(f"Enter the threshold for gap detection (in seconds) for {event_name}", 
-                                            min_value=0.0, value=4.0, step=0.1, key=f"gap_threshold_{event_name}")
-
-        
+        gap_threshold = st.number_input("Enter the threshold for gap detection (in seconds) for {event_name}", 
+                                        min_value=0.0, value=4.0, step=0.1, key=f"gap_threshold_{event_name}")
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
         gap_indices, gap_info = find_gaps(ibi_segment, gap_threshold, bvp_initial_timestamp)
-        
-        # Inside your Streamlit loop for each event
-        with st.expander(f"View gap details for {event_name}"):
+
+        with st.expander("View gap details for {event_name}"):
             for gap in gap_info:
                 st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
         split_segments = split_events_at_gaps(segment, ibi_data, gap_indices, bvp_sample_rate)
 
+        # Sort segments by duration and display the top 3 longest for selection
+        sorted_segments = sorted(split_segments, key=lambda x: len(x), reverse=True)[:3]
+        for i, seg in enumerate(sorted_segments):
+            duration = convert_length_to_time(len(seg), bvp_sample_rate)
+            st.write(f"Segment {i+1} Duration: {duration}")
+
+            if st.button(f"Analyze Segment {i+1}", key=f"analyze_{event_name}_{i}"):
+                # Allow user to specify the duration for analysis
+                segment_duration = st.text_input("Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
+                # Convert input duration to seconds
+                min_sec = [int(t) for t in segment_duration.split(':')]
+                analysis_duration_seconds = min_sec[0] * 60 + min_sec[1]
+        
+        # Analyze the segments
         for i, seg in enumerate(split_segments):
             st.subheader(f"Segment {i+1} for {event_name}")
-            st.write("Start Time:", format_time_for_display(seg['Timestamp'].iloc[0], bvp_initial_timestamp))
-            st.write("End Time:", format_time_for_display(seg['Timestamp'].iloc[-1], bvp_initial_timestamp))
-            
             if st.button(f"Analyze Segment {i+1}", key=f"analyze_{event_name}_{i}"):
+                # Call the analyze_hrv_from_ppg function here
                 hrv_metrics, _ = analyze_hrv_from_ppg(seg, ibi_data, seg['Timestamp'].iloc[0], seg['Timestamp'].iloc[-1], bvp_sample_rate)
                 st.write(hrv_metrics)
         # Correct the call to remove_gaps_from_bvp function
