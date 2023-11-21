@@ -280,7 +280,8 @@ if bvp_file and tags_file and ibi_file:
         formatted_length_before = convert_length_to_time(length_before, bvp_sample_rate)
 
         # Get user-defined threshold for gap detection
-        gap_threshold = st.number_input("Enter the threshold for gap detection (in seconds)", min_value=0.0, value=4.0, step=0.1)
+        gap_threshold = st.number_input(f"Enter the threshold for gap detection (in seconds) for {event_name}", 
+                                            min_value=0.0, value=4.0, step=0.1, key=f"gap_threshold_{event_name}")
 
         
         ibi_segment = ibi_data[(ibi_data['Timestamp'] >= closest_start_time) & (ibi_data['Timestamp'] <= closest_end_time)]
