@@ -211,12 +211,10 @@ def find_and_summarize_gaps(ibi_data, start_time, end_time, threshold):
     return gap_summary
 
 def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_rate, gap_threshold=4.0):
-    # Convert timestamps to datetime if necessary
     bvp_data = bvp_data.copy()
     bvp_data['Timestamp'] = pd.to_datetime(bvp_data['Timestamp'])
     ibi_data['Timestamp'] = pd.to_datetime(ibi_data['Timestamp'])
 
-    # Select data segment for the event
     segment = bvp_data[(bvp_data['Timestamp'] >= event_start) & (bvp_data['Timestamp'] <= event_end)]
 
     # Resample (interpolate) the PPG signal
@@ -297,29 +295,20 @@ if bvp_file and tags_file and ibi_file:
                 st.write(f"Gap from {gap['start']} to {gap['end']}, Duration: {gap['duration']}")
 
         split_segments = split_events_at_gaps(segment, ibi_data, gap_indices, bvp_sample_rate)
+    sorted_segments = sorted(split_segments, key=lambda x: len(x), reverse=True)[:3]
 
-        # Sort segments by duration and display the top 3 longest for selection
-        sorted_segments = sorted(split_segments, key=lambda x: len(x), reverse=True)[:3]
-        for i, seg in enumerate(sorted_segments):
-            duration = convert_length_to_time(len(seg), bvp_sample_rate)
-            st.write(f"Segment {i+1} Duration: {duration}")
-        
-            # Create a unique key for each button
-            unique_key = f"analyze_{event_name}_{i}_{len(seg)}"
-            if st.button(f"Analyze Segment {i+1}", key=unique_key):
-                # Allow user to specify the duration for analysis
-                segment_duration = st.text_input(f"Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
-                # Convert input duration to seconds
-                min_sec = [int(t) for t in segment_duration.split(':')]
-                analysis_duration_seconds = min_sec[0] * 60 + min_sec[1]
-        
-        # Analyze the segments
-        for i, seg in enumerate(split_segments):
-            st.subheader(f"Segment {i+1} for {event_name}")
-            if st.button(f"Analyze Segment {i+1}", key=f"analyze_{event_name}_{i}"):
-                # Call the analyze_hrv_from_ppg function here
-                hrv_metrics, _ = analyze_hrv_from_ppg(seg, ibi_data, seg['Timestamp'].iloc[0], seg['Timestamp'].iloc[-1], bvp_sample_rate)
-                st.write(hrv_metrics)
+    for i, seg in enumerate(sorted_segments):
+        duration = convert_length_to_time(len(seg), bvp_sample_rate)
+        st.write(f"Segment {i+1} Duration: {duration}")
+
+        unique_key = f"analyze_{event_name}_{i}_{len(seg)}"
+        if st.button(f"Analyze Segment {i+1}", key=unique_key):
+            segment_duration = st.text_input(f"Enter segment duration for analysis (mm:ss)", "02:00", key=f"duration_{event_name}_{i}")
+            min_sec = [int(t) for t in segment_duration.split(':')]
+            analysis_duration_seconds = min_sec[0] * 60 + min_sec[1]
+
+            hrv_metrics, _ = analyze_hrv_from_ppg(seg, ibi_data, seg['Timestamp'].iloc[0], seg['Timestamp'].iloc[-1], bvp_sample_rate)
+            st.write(hrv_metrics)
         # Correct the call to remove_gaps_from_bvp function
         #bvp_segment_without_gaps = remove_gaps_from_bvp(segment, ibi_segment, gap_indices, bvp_sample_rate)
         #length_after = len(bvp_segment_without_gaps)
