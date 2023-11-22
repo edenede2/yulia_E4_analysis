@@ -222,7 +222,7 @@ def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_ra
         return "Segment is empty, cannot analyze HRV.", {}
 
     # Resample (interpolate) the PPG signal
-     desired_length = 600  # Adjust as needed
+    desired_length = 600  # Adjust as needed
     if segment.empty:
         return "Selected segment is empty. No data to process.", {}
 
