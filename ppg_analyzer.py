@@ -222,7 +222,10 @@ def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_ra
         return "Segment is empty, cannot analyze HRV.", {}
 
     # Resample (interpolate) the PPG signal
-    desired_length = 600  # Adjust as needed
+     desired_length = 600  # Adjust as needed
+    if segment.empty:
+        return "Selected segment is empty. No data to process.", {}
+
     resampled_segment = nk.signal_resample(segment.iloc[:, 0], desired_length=desired_length, method="interpolation")
 
     # Check if resampled segment array is empty
@@ -241,8 +244,8 @@ def analyze_hrv_from_ppg(bvp_data, ibi_data, event_start, event_end, sampling_ra
     r_peaks = peaks_info['PPG_Peaks']
 
     # Check if R-peaks array is empty
-    if len(r_peaks) == 0:
-        return "No R-peaks found, cannot analyze HRV.", {}
+    if not r_peaks.size > 0:
+        return "No R-peaks detected in the PPG signal.", {}
 
     # Compute HRV metrics (focusing on time-domain metrics)
     hrv_metrics = nk.hrv_time(r_peaks, sampling_rate=desired_length, show=False)
